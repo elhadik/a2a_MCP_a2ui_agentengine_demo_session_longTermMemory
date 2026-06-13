@@ -34,34 +34,28 @@
 </head>
 <body>
     <div class="container" id="diagram-container">
-        <h2>Retail Multi-Agent A2A & A2UI Sequence Flow</h2>
+        <h2>Multi-Agent Hybrid System Architecture</h2>
         <div class="mermaid" id="diagram">
-sequenceDiagram
-    autonumber
-    actor User as User Portal Frontend
-    participant SV as Local Supervisor Agent
-    participant SA as Remote Sub-Agent (Vertex AI)
+graph TD
+    subgraph Frontend[Enterprise Chat Console]
+        User[User Chat UI] <--> SV[Supervisor Agent]
+        A2UI[Interactive Side Panel Sandbox] <--> SV
+    end
 
-    User->>SV: Send Prompt ("Identify opportunities")
-    Note over SV: Supervisor routes query
-    SV->>SA: A2A Request: Send Message (Task context)
-    Note over SA: Sub-agent runs pricing tools
-    SA->>SV: A2A Response: Return DataPart (Products list JSON)
-    Note over SV: Local Template Expansion:<br/>Compile HTML Pricing Table
-    SV->>User: A2UI Render: Return HTML Table Widget
-    Note over User: User clicks "Select Cohort" in Table Widget
-    User->>SV: A2UI Action Callback: POST /api/action (selected product)
-    SV->>SA: A2A Request: Send Message (Size cohort task)
-    Note over SA: Sub-agent sizes segment
-    SA->>SV: A2A Response: Return DataPart (Sizing metrics JSON)
-    Note over SV: Local Template Expansion:<br/>Compile HTML Sizing Dashboard
-    SV->>User: A2UI Render: Return HTML Dashboard Widget
-    Note over User: User selects partners & clicks "Activate"
-    User->>SV: A2UI Action Callback: POST /api/action (selected partners)
-    SV->>SA: A2A Request: Send Message (Run activation task)
-    Note over SA: Sub-agent executes export tool
-    SA->>SV: A2A Response: Return TextPart ("Export initiated")
-    SV->>User: Final Response: "Activation confirmed"
+    subgraph Cloud[GCP Vertex AI Agent Engine Runtime]
+        SV <-->|A2A / GenAI SDK| Semantic[Semantic Layer Agent]
+        SV <-->|A2A / GenAI SDK| Pricing[Price & Assortment Orchestrator]
+        Pricing <-->|A2A| PricingTool[Pricing Opportunities Agent]
+        PricingTool <--> PricingDB[Pricing DB API Tool]
+    end
+
+    subgraph OnPrem[Secure On-Premises Network Runtime]
+        SV <-->|A2A / Secure Egress Tunnel| Activation[Liquid Activate Orchestrator]
+        Activation <--> Build[Build Agent]
+        Activation <--> Size[Size Agent]
+        Build --> BuildMCP[audience-build MCP Server]
+        Size --> SizeMCP[audience-size MCP Server]
+    end
         </div>
     </div>
     <script>
