@@ -188,6 +188,8 @@ sequenceDiagram
     > *"Agent Registry provides a unified catalog to discover, govern, and reuse tools, APIs, and Model Context Protocol servers across your enterprise AI applications."* — [Google Cloud Agent Platform Registry Documentation](https://cloud.google.com/vertex-ai/generative-ai/docs/agent-registry)
 *   **Live Proof-of-Registration (MCP Registry):**
     ![GCP MCP Server Registration](architecture/screenshots/gcp_mcp_server_registered.png)
+*   **Live Proof-of-Registration (Agent Catalog):**
+    ![GCP Agent Registry Catalog](architecture/screenshots/agent_registry_list.png)
 
 ### ⚙️ Gemini Enterprise Agent Engine
 *   **Definition:** A managed runtime environment that packages Python code, dependencies, and parameters into a serialized execution graph (via Cloudpickle) and deploys it as an API endpoint.
