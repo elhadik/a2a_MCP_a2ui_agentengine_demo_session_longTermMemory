@@ -9,21 +9,22 @@ PRODUCT_TABLE_HTML_TEMPLATE = r"""<!DOCTYPE html>
     <meta charset='UTF-8'>
     <meta name='viewport' content='width=device-width, initial-scale=1.0'>
     <meta content='connect-src "none"' http-equiv='Content-Security-Policy'>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <title>Pricing opportunities Analysis</title>
     <style>
         :root {
-            --bg-color: #0f172a;
-            --card-bg: #1e293b;
+            --bg-color: #060509;
+            --card-bg: rgba(22, 14, 32, 0.7);
             --text-primary: #f8fafc;
-            --text-secondary: #94a3b8;
-            --accent-primary: #38bdf8;
-            --accent-secondary: #818cf8;
-            --border-color: #334155;
-            --success: #10b981;
+            --text-secondary: #a0aec0;
+            --accent-primary: #7928ca;
+            --accent-secondary: #ff007f;
+            --border-color: rgba(121, 40, 202, 0.3);
+            --success: #00f0ff;
             --warning: #f59e0b;
         }
         body {
-            font-family: system-ui, -apple-system, sans-serif;
+            font-family: 'Poppins', system-ui, -apple-system, sans-serif;
             background-color: var(--bg-color);
             color: var(--text-primary);
             margin: 0;
@@ -171,21 +172,22 @@ SIZING_DASHBOARD_HTML_TEMPLATE = r"""<!DOCTYPE html>
     <meta charset='UTF-8'>
     <meta name='viewport' content='width=device-width, initial-scale=1.0'>
     <meta content='connect-src "none"' http-equiv='Content-Security-Policy'>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <title>Audience Sizing & Activation</title>
     <style>
         :root {
-            --bg-color: #0f172a;
-            --card-bg: #1e293b;
+            --bg-color: #060509;
+            --card-bg: rgba(22, 14, 32, 0.7);
             --text-primary: #f8fafc;
-            --text-secondary: #94a3b8;
-            --accent-primary: #38bdf8;
-            --accent-secondary: #818cf8;
-            --border-color: #334155;
-            --success: #10b981;
+            --text-secondary: #a0aec0;
+            --accent-primary: #7928ca;
+            --accent-secondary: #ff007f;
+            --border-color: rgba(121, 40, 202, 0.3);
+            --success: #00f0ff;
             --warning: #f59e0b;
         }
         body {
-            font-family: system-ui, -apple-system, sans-serif;
+            font-family: 'Poppins', system-ui, -apple-system, sans-serif;
             background-color: var(--bg-color);
             color: var(--text-primary);
             margin: 0;
@@ -414,20 +416,21 @@ LOYALTY_CAMPAIGN_HTML_TEMPLATE = r"""<!DOCTYPE html>
     <meta charset='UTF-8'>
     <meta name='viewport' content='width=device-width, initial-scale=1.0'>
     <meta content='connect-src "none"' http-equiv='Content-Security-Policy'>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <title>Loyalty Campaign Activation</title>
     <style>
         :root {
-            --bg-color: #0f172a;
-            --card-bg: #1e293b;
+            --bg-color: #060509;
+            --card-bg: rgba(22, 14, 32, 0.7);
             --text-primary: #f8fafc;
-            --text-secondary: #94a3b8;
-            --accent-primary: #ec4899;
-            --accent-secondary: #f43f5e;
-            --border-color: #334155;
-            --success: #10b981;
+            --text-secondary: #a0aec0;
+            --accent-primary: #7928ca;
+            --accent-secondary: #ff007f;
+            --border-color: rgba(121, 40, 202, 0.3);
+            --success: #00f0ff;
         }
         body {
-            font-family: system-ui, -apple-system, sans-serif;
+            font-family: 'Poppins', system-ui, -apple-system, sans-serif;
             background-color: var(--bg-color);
             color: var(--text-primary);
             margin: 0;

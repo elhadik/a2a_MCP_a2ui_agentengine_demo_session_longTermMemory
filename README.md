@@ -130,3 +130,42 @@ ENV/
 .DS_Store
 Thumbs.db
 ```
+
+---
+
+## 5. End-to-End Execution Flow & UI Walkthrough
+
+The following sections illustrate the sequence of prompts, agent transitions, and interactive visual widgets displayed during the orchestration flow.
+
+### Step 1: Initial Portal View
+When you open the web application, you are greeted by the branded **Orchestration Hub** console.
+
+![Initial Portal Load](static/web_initial_load.png)
+
+*   **Sample User Prompt / Trigger:** Click the suggestion pill `🔍 Identify soft drink attrition opportunities`.
+
+---
+
+### Step 2: Attrition & Pricing Analysis Widget
+The Local Supervisor delegates the request to the Remote `PricingAssortmentOrchestrator`, which returns a detailed breakdown of lost households. The supervisor renders this list as an interactive **Pricing Table** widget in the sandbox panel.
+
+![Pricing Opportunities Table](static/web_pricing_table.png)
+
+*   **Sample User Prompt / Action:** Inside the table widget, click the **Select Cohort** button for `Diet Pepsi 12pk`. This dynamically posts the action callback payload back to the Supervisor Agent.
+
+---
+
+### Step 3: Audience Sizing Dashboard
+The Supervisor routes the selection to the Remote `LiquidActivateOrchestrator` to scale the segment. The sub-agent returns the audience scale and reach details, which are formatted into a card dashboard.
+
+![Audience Sizing Dashboard](static/web_sizing_dashboard.png)
+
+*   **Sample User Prompt / Action:** Check `LiveRamp Identity Link` and `Google Customer Match` checkboxes, and click the **Activate Audience Segment** button.
+
+---
+
+### Step 4: Final Activation Success
+The Supervisor triggers the export API and returns a final text confirmation of the audience synchronization to external partners.
+
+![Activation Success](static/web_final_success.png)
+
