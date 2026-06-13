@@ -1,5 +1,12 @@
-import os
 import sys
+import os
+
+# Disable mTLS client certificates to avoid pyOpenSSL context crashes on Google Linux workstations
+os.environ["GOOGLE_API_USE_CLIENT_CERTIFICATE"] = "false"
+os.environ["GOOGLE_API_USE_MTLS"] = "never"
+sys.modules['OpenSSL'] = None
+sys.modules['urllib3.contrib.pyopenssl'] = None
+
 import uuid
 import logging
 import datetime

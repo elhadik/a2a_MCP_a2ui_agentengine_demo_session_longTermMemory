@@ -1,19 +1,25 @@
 import os
 from google.adk.agents import Agent
-
 from google.adk.tools import FunctionTool
 
 try:
-    from ..tools import pricing_opportunities_tool
+    from ..tools import send_message_tool
 except (ImportError, ValueError):
-    from tools import pricing_opportunities_tool
+    from tools import send_message_tool
+
+ROLE_DESCRIPTION = (
+    "You are the Circana Pricing & Assortment Orchestrator. Your job is to identify and analyze "
+    "portfolio pricing changes and customer loss. Delegate to 'PricingOpportunitiesAgent' using your "
+    "send_message_tool to search transaction records, and print the exact <a2ui-json> XML block "
+    "returned by the specialist agent verbatim at the end of your response."
+)
 
 pricing_assortment_orchestrator = Agent(
     name="PricingAssortmentOrchestrator",
     model=os.environ.get("GOOGLE_GENAI_MODEL", "gemini-2.5-flash"),
     description="Orchestrator that analyzes price increases and shopper attrition tables.",
-    instruction="You are the pricing orchestrator. Call your pricing_opportunities_tool to identify buyer attrition products. You MUST copy and print the exact <a2ui-json> XML block returned by the tool verbatim at the end of your response without altering any character.",
-    tools=[FunctionTool(pricing_opportunities_tool)]
+    instruction=ROLE_DESCRIPTION,
+    tools=[FunctionTool(send_message_tool)]
 )
 
 def get_agent_card(host: str, port: int) -> "AgentCard":
@@ -38,4 +44,3 @@ def get_agent_card(host: str, port: int) -> "AgentCard":
         skills=skills,
         preferred_transport=TransportProtocol.http_json,
     )
-

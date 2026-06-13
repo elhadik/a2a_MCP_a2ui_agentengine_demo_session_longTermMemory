@@ -111,6 +111,34 @@ def get_agent_card(host: str, port: int) -> "AgentCard":
             tags=['loyalty', 'personalization', 'campaign'],
             examples=['Initiate loyalty rewards personalization campaign for Diet Pepsi cohort.'],
         ),
+        AgentSkill(
+            id='circana-decoy-survey-skill',
+            name='Consumer Survey Planner',
+            description='Designs consumer sentiment research surveys to measure brand awareness metrics.',
+            tags=['survey', 'market-research'],
+            examples=['Draft a brand health survey for soft drink categories.'],
+        ),
+        AgentSkill(
+            id='circana-decoy-analytics-skill',
+            name='Multi-Channel Attribution Analytics',
+            description='Performs multi-channel media mix modeling and marketing cost attribution analysis.',
+            tags=['analytics', 'attribution'],
+            examples=['Calculate ROI for television advertising campaigns.'],
+        ),
+        AgentSkill(
+            id='circana-decoy-brainwave-skill',
+            name='Cognitive Ad Testing',
+            description='Measures viewer cognitive response and emotional resonance to advertisement content.',
+            tags=['brainwave', 'neuromarketing'],
+            examples=['Analyze engagement score for pepsi teaser video.'],
+        ),
+        AgentSkill(
+            id='circana-decoy-synapse-skill',
+            name='Logistics Supply Chain Optimization',
+            description='Minimizes shipping cost and optimizes warehouse distribution routing paths.',
+            tags=['supply-chain', 'logistics'],
+            examples=['Optimize supply route for Chicago distribution center.'],
+        ),
     ]
     return AgentCard(
         name='CircanaPilotSupervisor',

@@ -10,6 +10,49 @@ const emptyState = document.getElementById('empty-state');
 const widgetBadge = document.getElementById('widget-badge');
 const sessionsListContainer = document.getElementById('sessions-list');
 const btnNewChat = document.getElementById('btn-new-chat');
+const sandboxPane = document.querySelector('.sandbox-pane');
+const sidebarPane = document.querySelector('.sidebar-pane');
+const btnToggleSidebar = document.getElementById('btn-toggle-sidebar');
+
+function updateSandboxVisibility() {
+    if (activeWidgets > 0) {
+        sandboxPane.classList.remove('collapsed');
+    } else {
+        sandboxPane.classList.add('collapsed');
+    }
+}
+
+function showTypingIndicator() {
+    if (document.getElementById('typing-indicator')) return;
+    
+    const msgDiv = document.createElement('div');
+    msgDiv.className = 'message agent loading';
+    msgDiv.id = 'typing-indicator';
+    
+    const avatarDiv = document.createElement('div');
+    avatarDiv.className = 'avatar';
+    avatarDiv.textContent = '🤖';
+    
+    const contentDiv = document.createElement('div');
+    contentDiv.className = 'content';
+    
+    const loaderDiv = document.createElement('div');
+    loaderDiv.className = 'typing-loader';
+    loaderDiv.innerHTML = '<span></span><span></span><span></span>';
+    
+    contentDiv.appendChild(loaderDiv);
+    msgDiv.appendChild(avatarDiv);
+    msgDiv.appendChild(contentDiv);
+    chatMessages.appendChild(msgDiv);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+function removeTypingIndicator() {
+    const indicator = document.getElementById('typing-indicator');
+    if (indicator) {
+        indicator.remove();
+    }
+}
 
 // Indicators
 const indicators = {
@@ -84,6 +127,7 @@ function renderA2UIWidget(widget) {
     
     activeWidgets++;
     widgetBadge.textContent = `${activeWidgets} Active Widget${activeWidgets > 1 ? 's' : ''}`;
+    updateSandboxVisibility();
     
     const card = document.createElement('div');
     card.className = 'widget-card';
@@ -224,6 +268,7 @@ async function selectSession(id) {
     sandboxContent.innerHTML = '';
     activeWidgets = 0;
     widgetBadge.textContent = '0 Active Widgets';
+    updateSandboxVisibility();
     if (emptyState) {
         emptyState.style.display = 'flex';
     }
@@ -285,6 +330,7 @@ async function submitUserMessage(message) {
         setIndicator('loyalty');
     }
     
+    showTypingIndicator();
     try {
         const response = await fetch('/api/chat', {
             method: 'POST',
@@ -293,12 +339,15 @@ async function submitUserMessage(message) {
         });
         
         if (!response.ok) {
-            throw new Error(`Server returned HTTP ${response.status}`);
+            const errData = await response.json().catch(() => ({}));
+            const errMsg = errData.detail || `Server returned HTTP ${response.status}`;
+            throw new Error(errMsg);
         }
         
         const data = await response.json();
         setIndicator('supervisor');
         
+        removeTypingIndicator();
         if (data.text) {
             appendMessage('agent', data.text);
         }
@@ -306,10 +355,12 @@ async function submitUserMessage(message) {
             data.widgets.forEach(renderA2UIWidget);
         }
     } catch (err) {
+        removeTypingIndicator();
         console.error("Chat Error:", err);
         appendMessage('system', `Error sending message: ${err.message}`);
         setIndicator('supervisor');
     } finally {
+        removeTypingIndicator();
         userInput.disabled = false;
         btnSend.disabled = false;
         userInput.focus();
@@ -342,6 +393,7 @@ async function submitInteractiveAction(action) {
     userInput.disabled = true;
     btnSend.disabled = true;
     
+    showTypingIndicator();
     try {
         const response = await fetch('/api/action', {
             method: 'POST',
@@ -356,6 +408,7 @@ async function submitInteractiveAction(action) {
         const data = await response.json();
         setIndicator('supervisor');
         
+        removeTypingIndicator();
         if (data.text) {
             appendMessage('agent', data.text);
         }
@@ -363,10 +416,12 @@ async function submitInteractiveAction(action) {
             data.widgets.forEach(renderA2UIWidget);
         }
     } catch (err) {
+        removeTypingIndicator();
         console.error("Action Callback Error:", err);
         appendMessage('system', `Error executing callback action: ${err.message}`);
         setIndicator('supervisor');
     } finally {
+        removeTypingIndicator();
         userInput.disabled = false;
         btnSend.disabled = false;
     }
@@ -389,6 +444,19 @@ userInput.addEventListener('keydown', (e) => {
 });
 
 btnNewChat.addEventListener('click', createNewSession);
+
+if (btnToggleSidebar && sidebarPane) {
+    btnToggleSidebar.addEventListener('click', () => {
+        sidebarPane.classList.toggle('collapsed');
+    });
+}
+
+const sessionDisplay = document.getElementById('session-display');
+if (sessionDisplay && sandboxPane) {
+    sessionDisplay.addEventListener('click', () => {
+        sandboxPane.classList.toggle('collapsed');
+    });
+}
 
 // Suggestions shortcut
 window.suggest = function(text) {

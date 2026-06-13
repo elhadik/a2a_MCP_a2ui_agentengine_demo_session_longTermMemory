@@ -208,6 +208,28 @@ class CircanaPilotExecutor(AgentExecutor):
         await updater.submit()
         await updater.start_work()
 
+        # Model Armor inline prompt safety scan
+        if user_input_text:
+            try:
+                try:
+                    from .tools import sanitize_content_with_model_armor
+                except ImportError:
+                    from tools import sanitize_content_with_model_armor
+                user_input_text = sanitize_content_with_model_armor(user_input_text)
+                runner_parts = [types.Part(text=user_input_text)]
+            except ValueError as guard_err:
+                logger.warning(f"CircanaPilotExecutor blocked by safety guardrail: {guard_err}")
+                await updater.update_status(
+                    TaskState.completed,
+                    new_agent_parts_message(
+                        [Part(root=TextPart(text=f"⚠️ {str(guard_err)}"))],
+                        context.context_id,
+                        context.task_id
+                    ),
+                    final=True
+                )
+                return
+
         try:
             session = await self.runner.session_service.get_session(
                 app_name=self.runner.app_name,
@@ -238,6 +260,15 @@ class CircanaPilotExecutor(AgentExecutor):
                         )
 
                     if answer_text:
+                        try:
+                            try:
+                                from .tools import sanitize_content_with_model_armor
+                            except ImportError:
+                                from tools import sanitize_content_with_model_armor
+                            answer_text = sanitize_content_with_model_armor(answer_text)
+                        except Exception as pii_err:
+                            logger.error(f"Error sanitizing output: {pii_err}")
+                            
                         final_parts = parse_response_to_parts(answer_text)
                         
                         try:

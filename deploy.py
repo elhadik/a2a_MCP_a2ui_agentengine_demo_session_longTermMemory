@@ -17,13 +17,17 @@ from google.auth.transport.requests import Request
 from google.genai import types
 from vertexai.preview.reasoning_engines import A2aAgent
 
-# Load dot env from parent directory
-load_dotenv("../.env")
+# Load dot env from current directory
+load_dotenv(".env")
 
 # Add current directory to python path
 sys.path.insert(0, ".")
 
 def main():
+    # Change CWD to agents/ to ensure correct packaging namespace
+    if os.path.exists("agents"):
+        os.chdir("agents")
+        
     project_id = os.environ.get("PROJECT_ID")
     location = os.environ.get("LOCATION", "us-central1")
     storage = os.environ.get("STORAGE_BUCKET")
@@ -52,7 +56,6 @@ def main():
     )
     print("✓ Vertex AI client created.")
 
-    # Requirements for Reasoning Engine container
     requirements = [
         "google-cloud-aiplatform[agent_engines,adk]==1.148.0",
         "google-genai==1.73.1",
@@ -63,9 +66,11 @@ def main():
         "a2ui-agent-sdk==0.2.1",
         "fastapi==0.136.0",
         "google-cloud-storage",
+        "httpx>=0.27.0",
+        "google-auth>=2.29.0",
     ]
 
-    # Package folder relative to CWD (agents/)
+    # Package folder relative to CWD (circana_pilot_agent/)
     extra_packages = ["circana_pilot_agent"]
 
     # Sub-agent deployment specs
@@ -126,6 +131,7 @@ def main():
                 "PROJECT_ID": project_id,
                 "LOCATION": location,
                 "GOOGLE_CLOUD_LOCATION": location,
+                "MCP_SERVER_URL": os.environ.get("MCP_SERVER_URL", ""),
             }
         }
         
@@ -136,7 +142,7 @@ def main():
             
             print(f"✓ Deployed successfully! Resource name: {resource_name}")
             print(f"✓ Endpoint URL: {endpoint_url}")
-            deployed_endpoints[dep['key']] = endpoint_url
+            deployed_endpoints[dep['key']] = resource_name
         except Exception as ex:
             print(f"✗ Deployment failed for {dep['key']}: {ex}")
             import traceback
@@ -145,8 +151,33 @@ def main():
     print("\n" + "=" * 80)
     print("ALL SUB-AGENTS DEPLOYED SUCCESSFULLY!")
     print("=" * 80)
+    
+    # Automatically update .env file
+    import re
+    env_path = ".env"
+    env_content = ""
+    if os.path.exists(env_path):
+        with open(env_path, "r") as f:
+            env_content = f.read()
+            
+    mapping = {
+        "PricingAssortmentOrchestrator": "PRICING_AGENT_URL",
+        "LiquidActivateOrchestrator": "ACTIVATE_AGENT_URL",
+        "LoyaltyCampaignOrchestrator": "LOYALTY_AGENT_URL"
+    }
+    
     for k, v in deployed_endpoints.items():
-        print(f"'{k}': '{v}',")
+        env_var = mapping.get(k)
+        if env_var:
+            if f"{env_var}=" in env_content:
+                env_content = re.sub(f"{env_var}=[^\n]*", f"{env_var}={v}", env_content)
+            else:
+                env_content = env_content.strip() + f"\n{env_var}={v}\n"
+                
+    with open(env_path, "w") as f:
+        f.write(env_content)
+        
+    print("✓ Successfully synchronized local .env configuration with new agent engine resource paths!")
     print("=" * 80)
 
 if __name__ == "__main__":

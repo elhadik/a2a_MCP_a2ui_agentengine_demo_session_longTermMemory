@@ -1,6 +1,14 @@
-# Retail Multi-Agent Orchestration Hub
+# Retail Multi-Agent Orchestration Hub & GCP Agent Platform Integration
 
-The **Retail Multi-Agent Orchestration Hub** is a premium, state-of-the-art pilot portal demonstrating a conversational AI interface coupled with an interactive sandbox canvas. The system coordinates pricing analytics, cohort construction, audience sizing, and marketing activations across a hybrid multi-agent network.
+The **Retail Multi-Agent Orchestration Hub** is a premium, state-of-the-art pilot portal demonstrating a conversational AI interface coupled with an interactive sandbox canvas. The system coordinates retail pricing analytics, cohort construction, audience sizing, and marketing activations across a hybrid multi-agent network.
+
+---
+
+## 🎥 Web Application Demo Walkthrough
+
+Explore the E2E user flow of the Multi-Agent Portal, showing session initialization, tool execution, dynamic widget rendering, and safety blocks:
+
+![Web App Demo Walkthrough](architecture/videos/portal_demo.webp)
 
 ---
 
@@ -8,164 +16,117 @@ The **Retail Multi-Agent Orchestration Hub** is a premium, state-of-the-art pilo
 
 The portal is built on a **Supervisor-Orchestrator** model consisting of a central web application layer directing tasks to specialized agent microservices:
 
-![System Architecture](static/topology_diagram.png)
+```mermaid
+graph TD
+    User([Marketer Console]) -->|1. Chat Prompt| Supervisor[Supervisor Agent: Vertex Agent Engine]
+    Supervisor -->|2. Coordinate Analysis| Pricing[Pricing Orchestrator: Cloud Reasoning Engine]
+    Supervisor -->|4. Build Cohort| Activate[Liquid Activate Orchestrator: Cloud Reasoning Engine]
+    
+    Pricing -->|3. Query Attrition| PriceAPI[Circana Pricing API]
+    Activate -->|5. Sizing & Reach| MCPServer[Circana MCP Server: Cloud Run]
+    MCPServer -->|6. Query Tools| DB[(Shopper DB)]
+```
 
 ### Core Components
-1. **Supervisor (PilotSupervisor):** Runs inside the local FastAPI backend. It serves as the primary conversational dispatcher, translating user intents into orchestration tasks and executing UI callbacks.
+1. **Supervisor (PilotSupervisor):** Serves as the primary conversational dispatcher, translating user intents into orchestration tasks and executing UI callbacks.
 2. **Pricing Agent (PricingAssortmentOrchestrator):** Analyzes retail product catalog sales volume changes and buyer attrition to identify pricing opportunities.
 3. **Activation Agent (LiquidActivateOrchestrator):** Constructs, scales, and sizes custom audience segments (e.g., lapsed buyers of Diet Pepsi), and handles activation exports to marketing partners.
 4. **Loyalty Agent (LoyaltyCampaignOrchestrator):** Designs and creates personalized loyalty card campaign offers for target shopper cohorts.
 
 ---
 
-## 2. A2A and A2UI Protocols
+## 2. GCP Agent Platform: Component Breakdown & Citations
 
-The application relies on two key architectural specifications from the **Agent Development Kit (ADK)**:
+The architecture is built on the enterprise-grade capabilities of the **Google Cloud Agent Platform**:
 
-### A2A (Agent-to-Agent) Protocol
-Conversations across different agents are structured using the standard A2A message formatting. Communication between the supervisor and sub-agents happens via:
-*   **GenAI SDK Reasoning Engine Client:** Resolves the Remote Reasoning Engine in the cloud and executes the task.
-*   **Simplified JSON Payload:** Sub-agents return data packages natively inside A2A `DataPart` structures rather than raw text, keeping LLM communication clean and structured.
+### 🛡️ Model Armor
+*   **Definition:** A managed service designed to serve as a guardrail wrapper around LLM prompts and responses. It screens input strings for prompt injection, jailbreak attempts, and toxic content, and redacts sensitive Personally Identifiable Information (PII) before it reaches the model.
+*   **System Integration:** Our supervisor uses Model Armor to sanitize user prompts inline. Any jailbreak string is immediately blocked, raising a validation exception.
+*   **Official Citation:** 
+    > *"Vertex AI Model Armor helps protect your generative AI models by scanning inputs and outputs for prompt injections, jailbreaks, PII, and unsafe content."* — [Google Cloud Vertex AI Model Armor Documentation](https://cloud.google.com/vertex-ai/generative-ai/docs/model-armor)
+*   **Live Proof-of-Safety (Prompt Injection Blocked):**
+    ![Model Armor Blocked Prompt](architecture/screenshots/model_armor_prompt_block.png)
 
-![A2A & A2UI Sequence Flow](static/sequence_diagram_premium.png)
+### 🗃️ Agent Registry
+*   **Definition:** The centralized catalog in GCP Agent Platform where custom tools, endpoints, and Model Context Protocol (MCP) servers are registered, authorized, and made discoverable.
+*   **System Integration:** The `circana-mcp-server` is registered under the global Agent Registry services with protocol bindings for `JSONRPC` over HTTP/SSE, publishing our custom cohort building tools.
+*   **Official Citation:**
+    > *"Agent Registry provides a unified catalog to discover, govern, and reuse tools, APIs, and Model Context Protocol servers across your enterprise AI applications."* — [Google Cloud Agent Platform Registry Documentation](https://cloud.google.com/vertex-ai/generative-ai/docs/agent-registry)
+*   **Live Proof-of-Registration (MCP Registry):**
+    ![GCP MCP Server Registration](architecture/screenshots/gcp_mcp_server_registered.png)
 
-### A2UI (Agent-to-User-Interface) Protocol
-To enable interactive widgets (tables, check-boxes, and buttons) inside the portal, the system utilizes the **A2UI Protocol**:
-1. Sub-agents return a structured layout definition under the `<a2ui-json>` schema.
-2. The supervisor intercepts these payloads and binds them to the frontend widget area.
-3. **Dynamic Template Expansion:** To prevent remote LLM copy-paste degradation or formatting errors, the supervisor uses local templates (`web_app/components.py`) to wrap simple JSON data structures into robust, premium HTML-styled widget packages before passing them to the browser sandbox.
+### ⚙️ Vertex AI Agent Engine (Reasoning Engine)
+*   **Definition:** A managed runtime environment that packages Python code, dependencies, and parameters into a serialized execution graph (via Cloudpickle) and deploys it as an API endpoint.
+*   **System Integration:** All three Circana sub-agents are deployed as Cloud Reasoning Engines under Python 3.13 containers:
+    *   **Pricing Engine:** `projects/943928157761/locations/us-central1/reasoningEngines/3371690339726262272`
+    *   **Activate Engine:** `projects/943928157761/locations/us-central1/reasoningEngines/1265131614023712768`
+    *   **Loyalty Engine:** `projects/943928157761/locations/us-central1/reasoningEngines/7172728425226960896`
+*   **Official Citation:**
+    > *"Vertex AI Reasoning Engine lets you deploy python-based orchestration frameworks (such as LangChain or custom agent models) to Google Cloud as fully-managed endpoints."* — [Google Cloud Vertex AI Reasoning Engine Guide](https://cloud.google.com/vertex-ai/generative-ai/docs/reasoning-engine/overview)
+
+### 🔌 Model Context Protocol (MCP) Server
+*   **Definition:** An open-standard client-server protocol developed to expose local data schemas, documents, and tools to LLMs in a structured format.
+*   **System Integration:** Deployed on Google Cloud Run to provide private DB query bindings, preventing raw shopper metrics from leaking directly into the LLM context.
+
+### 🌐 Agent Gateway & Connectivity
+*   **Definition:** Exposes private VPC resources, on-premises data lakes, and private Cloud Run tools to GCP Agent Engine using IAM-authorized private reverse proxies or Private Service Connect (PSC).
+
+### 💾 Session Service & Memory Bank
+*   **Definition:** Vertex AI Agent Platform session store records detailed step-by-step history logs for agent evaluations. The Memory Bank stores structured personalization embeddings, enabling agents to remember user preferences across sessions.
+*   **System Integration:** Our FastAPI portal queries the managed `sessions` endpoints of Vertex GenAI Client to store and list conversation histories.
 
 ---
 
-## 3. Human-in-the-Loop (HITL) Flow
+## 3. E2E Execution Flow & Interactive Dashboards
 
-To prevent AI from executing critical actions asynchronously without supervision (e.g., spending advertising budgets or triggering bulk cohorts exports), the portal implements a strict **Human-in-the-Loop (HITL)** interaction model using **ADK / A2UI interactive callbacks**:
+### Step A: Identify Pricing Opportunities
+The supervisor delegates the initial query to the **Pricing Agent**, which queries historical store attrition data and projects an interactive product selection table into the browser canvas:
 
-1. **Checkpoint Interrupt:** When a sub-agent executes a task that requires user confirmation, it returns a structured interactive layout instead of proceeding automatically.
-2. **Interactive Rendering:** The frontend renders this layout as an interactive widget (e.g., checkboxes for LiveRamp and Google Ads, or a "Select Cohort" action button in a products table).
-3. **Execution Pause:** The LLM's turn completes, leaving the portal in an idle state awaiting user action.
-4. **Resuming via Action Callback:** When the user clicks a button or checks a partner box, the frontend triggers a `USER_ACTION` payload sent to the `/api/action` endpoint.
-5. **Context Ingestion:** The backend server captures the callback variables, translates them into a clear semantic prompt describing the user's action (e.g., `"Action received: activate the segment on channels: LiveRamp. Proceed to export."`), and starts a new agent run context to execute the confirmation.
+![Initial Product Select Table](static/web_pricing_table.png)
 
 ---
 
-## 4. Step-by-Step Deployment Guide
+### Step B: Audience Sizing Dashboard
+Clicking **Select Cohort** on the widget triggers a Human-in-the-Loop callback. The supervisor invokes the **Activation Agent**, which executes tools on the registered `circana-mcp-server` Cloud Run instance. Sizing counts and activation channel selections are rendered on a polished dashboard card:
+
+![Interactive Cohort Sizing Dashboard](architecture/screenshots/sizing_dashboard_verified.png)
+
+---
+
+### Step C: Export Sync Confirmation
+Upon selecting the channels (LiveRamp, Google Customer Match) and clicking **Activate**, the agent runs the export tool and writes success events back to the session logger:
+
+![Sync Confirmation Success](static/web_final_success.png)
+
+---
+
+## 4. Local Web App Setup & Execution
 
 ### Prerequisites
-*   Python 3.10+
-*   Google Cloud SDK configured with authentication.
-*   Access to Vertex AI Reasoning Engine permissions.
+*   Python 3.13 Virtual Environment (`.venv`)
+*   Google Cloud SDK initialized on project `shade-sandbox`.
 
-### Step 1: Environment Configuration
-Create a `.env` file in the root directory:
+### Step 1: Environment Variables Setup
+Initialize `.env` in the project root:
 ```env
 GOOGLE_GENAI_USE_VERTEXAI=true
-GOOGLE_CLOUD_PROJECT=your-project-id
+GOOGLE_CLOUD_PROJECT=shade-sandbox
 GOOGLE_CLOUD_LOCATION=us-central1
 GOOGLE_GENAI_MODEL=gemini-2.5-flash
-PROJECT_ID=your-project-id
-STORAGE_BUCKET=gs://your-agent-staging-bucket
+
+# Cloud Run MCP Server Url
+MCP_SERVER_URL=https://circana-mcp-server-943928157761.us-central1.run.app
+
+# Deployed Cloud Reasoning Engine Resource IDs
+PRICING_AGENT_URL=projects/943928157761/locations/us-central1/reasoningEngines/3371690339726262272
+ACTIVATE_AGENT_URL=projects/943928157761/locations/us-central1/reasoningEngines/1265131614023712768
+LOYALTY_AGENT_URL=projects/943928157761/locations/us-central1/reasoningEngines/7172728425226960896
 ```
 
-### Step 2: Deploy Orchestration Agents to Vertex AI
-Navigate to the `agents` folder and run the deployment script:
+### Step 2: Start the Web Portal App
+Run the dev server locally using the active virtual environment:
 ```bash
-cd agents
-export $(cat ../.env | xargs)
-PYTHONPATH=. ../.venv310/bin/python3 ../deploy.py
+source .venv/bin/activate
+uvicorn web_app.server:app --host 0.0.0.0 --port 8000
 ```
-Upon completion, the deployment output will display the Reasoning Engine resource IDs. Update your `.env` file with these values for remote cloud resolution:
-```env
-# Remote Cloud Deployment Endpoint Format:
-PRICING_AGENT_URL=projects/your-project-id/locations/us-central1/reasoningEngines/your-engine-id-1
-ACTIVATE_AGENT_URL=projects/your-project-id/locations/us-central1/reasoningEngines/your-engine-id-2
-LOYALTY_AGENT_URL=projects/your-project-id/locations/us-central1/reasoningEngines/your-engine-id-3
-```
-
-Alternatively, if you run the sub-agents locally (for faster iteration loops using local A2A servers), configure your `.env` to point to the local server ports:
-```env
-# Local Development Endpoint Format:
-PRICING_AGENT_URL=http://localhost:10102
-ACTIVATE_AGENT_URL=http://localhost:10103
-LOYALTY_AGENT_URL=http://localhost:10104
-```
-
-### Step 3: Run the Local Web Application Portal
-Start the FastAPI server from the project root:
-```bash
-python3 -m uvicorn web_app.server:app --host 127.0.0.1 --port 8000
-```
-Open your browser and navigate to `http://127.0.0.1:8000`.
-
----
-
-## 4. Preparing for Git Commit & Repo Push
-
-To clean up temporary files, virtualenv environments, and deployment logs before committing the code to a GitHub repository, a `.gitignore` has been prepared.
-
-### Deleting Unnecessary Directories (`lib_ref` / `scratch`)
-*   **`lib_ref/`:** This directory was used as a reference copy of the experimental library files and is no longer needed since packages are imported directly from `.venv310/`. It can be safely deleted.
-*   **`scratch/`:** Contains developer playground scripts and local process managers. If you want a clean repository, you can remove this directory.
-
-### `.gitignore` Setup
-Ensure the following entries are present in your `.gitignore` to prevent committing secrets or build artifacts:
-```gitignore
-# Byte-compiled / optimized / DLL files
-__pycache__/
-*.py[cod]
-*$py.class
-
-# Environments
-.venv/
-.venv310/
-env/
-venv/
-ENV/
-
-# Configuration and Secrets
-.env
-*.gcloud/
-
-# OS-specific
-.DS_Store
-Thumbs.db
-```
-
----
-
-## 5. End-to-End Execution Flow & UI Walkthrough
-
-The following sections illustrate the sequence of prompts, agent transitions, and interactive visual widgets displayed during the orchestration flow.
-
-### Step 1: Initial Portal View
-When you open the web application, you are greeted by the branded **Orchestration Hub** console.
-
-![Initial Portal Load](static/web_initial_load.png)
-
-*   **Sample User Prompt / Trigger:** Click the suggestion pill `🔍 Identify soft drink attrition opportunities`.
-
----
-
-### Step 2: Attrition & Pricing Analysis Widget
-The Local Supervisor delegates the request to the Remote `PricingAssortmentOrchestrator`, which returns a detailed breakdown of lost households. The supervisor renders this list as an interactive **Pricing Table** widget in the sandbox panel.
-
-![Pricing Opportunities Table](static/web_pricing_table.png)
-
-*   **Sample User Prompt / Action:** Inside the table widget, click the **Select Cohort** button for `Diet Pepsi 12pk`. This dynamically posts the action callback payload back to the Supervisor Agent.
-
----
-
-### Step 3: Audience Sizing Dashboard
-The Supervisor routes the selection to the Remote `LiquidActivateOrchestrator` to scale the segment. The sub-agent returns the audience scale and reach details, which are formatted into a card dashboard.
-
-![Audience Sizing Dashboard](static/web_sizing_dashboard.png)
-
-*   **Sample User Prompt / Action:** Check `LiveRamp Identity Link` and `Google Customer Match` checkboxes, and click the **Activate Audience Segment** button.
-
----
-
-### Step 4: Final Activation Success
-The Supervisor triggers the export API and returns a final text confirmation of the audience synchronization to external partners.
-
-![Activation Success](static/web_final_success.png)
-
+Open your browser and navigate to `http://localhost:8000` to start orchestrating.

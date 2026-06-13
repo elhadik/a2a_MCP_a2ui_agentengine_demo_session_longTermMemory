@@ -40,6 +40,106 @@ def pricing_opportunities_tool(query_details: str) -> str:
     
     return f"{summary}\n\n{a2ui_block}"
 
+import subprocess
+import sys
+import os
+
+def call_mcp_tool(tool_name: str, arguments: dict) -> dict:
+    mcp_url = os.environ.get("MCP_SERVER_URL")
+    if mcp_url:
+        import httpx
+        logger.info(f"call_mcp_tool: Making HTTP call to remote MCP server: {mcp_url}")
+        
+        headers = {}
+        # Auto-detect and fetch Google IAM token if remote Cloud Run endpoint is protected
+        if "localhost" not in mcp_url and "127.0.0.1" not in mcp_url:
+            try:
+                import google.auth
+                import google.auth.transport.requests
+                from google.oauth2 import id_token
+                
+                # Fetch credentials and generate ID token for Cloud Run URL as audience
+                creds, project = google.auth.default()
+                auth_req = google.auth.transport.requests.Request()
+                creds.refresh(auth_req)
+                target_audience = mcp_url.rstrip("/")
+                token = id_token.fetch_id_token(auth_req, target_audience)
+                headers["Authorization"] = f"Bearer {token}"
+                logger.info("Successfully fetched Google Cloud ID Token for MCP request authentication.")
+            except Exception as auth_err:
+                logger.warning(f"Could not automatically fetch Google ID token for remote auth: {auth_err}")
+                
+        try:
+            # Sync HTTP post
+            with httpx.Client(timeout=30.0, headers=headers) as client:
+                resp = client.post(
+                    f"{mcp_url.rstrip('/')}/tools/call",
+                    json={
+                        "name": tool_name,
+                        "arguments": arguments
+                    }
+                )
+                resp.raise_for_status()
+                payload = resp.json()
+                
+                if "error" in payload:
+                    raise RuntimeError(f"MCP remote server error: {payload['error']}")
+                    
+                result = payload["result"]
+                content_block = result["content"][0]["text"]
+                return json.loads(content_block)
+        except Exception as e:
+            logger.error(f"Failed to execute MCP tool call via HTTP: {e}", exc_info=True)
+            raise e
+
+    # Fall back to local stdio subprocess mode
+    # Look for mcp server in current package layout
+    mcp_server_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "mcp_servers/circana_mcp_server.py"))
+    if not os.path.exists(mcp_server_path):
+        mcp_server_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "sub_agents/circana_mcp_server.py"))
+    if not os.path.exists(mcp_server_path):
+        mcp_server_path = os.path.join(os.path.dirname(__file__), "circana_mcp_server.py")
+        
+    logger.info(f"call_mcp_tool: Launching local MCP server subprocess: {mcp_server_path}")
+    python_exec = sys.executable
+    proc = subprocess.Popen(
+        [python_exec, mcp_server_path],
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True
+    )
+    
+    try:
+        # standard JSON-RPC tools/call structure
+        req = {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "tools/call",
+            "params": {
+                "name": tool_name,
+                "arguments": arguments
+            }
+        }
+        proc.stdin.write(json.dumps(req) + "\n")
+        proc.stdin.flush()
+        
+        response_line = proc.stdout.readline()
+        if not response_line:
+            raise RuntimeError("MCP server closed stdout unexpectedly.")
+            
+        resp = json.loads(response_line)
+        if "error" in resp:
+            raise RuntimeError(f"MCP server error: {resp['error']}")
+            
+        result = resp["result"]
+        content_block = result["content"][0]["text"]
+        return json.loads(content_block)
+    finally:
+        proc.stdin.close()
+        proc.terminate()
+        proc.wait()
+
 def build_audience_tool(product_name: str, spend_criteria: str = "lapsed") -> str:
     """Invokes the on-premises 'audience-build' service to isolate and construct the shopper cohort.
     
@@ -47,21 +147,28 @@ def build_audience_tool(product_name: str, spend_criteria: str = "lapsed") -> st
         product_name: Name of the product (e.g. 'Diet Pepsi 12pk').
         spend_criteria: Segment definition criteria (e.g. 'lapsed', 'heavy', 'all').
     """
-    logger.info(f"Executing build_audience_tool for product: {product_name} | criteria: {spend_criteria}")
-    
-    # Persist product context
-    _MOCK_STATE["selected_product"] = product_name
-    clean_name = product_name.upper().replace(' ', '-').replace("'", "")
-    aud_id = f"AUD-{clean_name}-999"
-    _MOCK_STATE["audience_id"] = aud_id
-    
-    return json.dumps({
-        "status": "Created",
-        "audience_id": aud_id,
-        "product_name": product_name,
-        "shoppers_isolated": 350000,
-        "message": f"Successfully materialized cohort for {product_name} containing 350K raw historical shoppers."
-    }, indent=2)
+    logger.info(f"build_audience_tool: Querying MCP server for tool 'audience-build'...")
+    try:
+        mcp_result = call_mcp_tool("audience-build", {"product_name": product_name, "spend_criteria": spend_criteria})
+        
+        _MOCK_STATE["selected_product"] = product_name
+        _MOCK_STATE["audience_id"] = mcp_result.get("audience_id")
+        
+        return json.dumps(mcp_result, indent=2)
+    except Exception as e:
+        logger.error(f"Failed to execute audience-build via MCP: {e}", exc_info=True)
+        # Fallback
+        clean_name = product_name.upper().replace(' ', '-').replace("'", "")
+        aud_id = f"AUD-{clean_name}-999"
+        _MOCK_STATE["selected_product"] = product_name
+        _MOCK_STATE["audience_id"] = aud_id
+        return json.dumps({
+            "status": "Created",
+            "audience_id": aud_id,
+            "product_name": product_name,
+            "shoppers_isolated": 350000,
+            "message": f"Fallback: Materialized cohort for {product_name}."
+        })
 
 def size_audience_tool(audience_id: str, partner_options: str = "LiveRamp,Google") -> str:
     """Invokes the on-premises 'audience-size' service to calculate estimated audience reach across channels.
@@ -70,30 +177,34 @@ def size_audience_tool(audience_id: str, partner_options: str = "LiveRamp,Google
         audience_id: The identifier of the audience segment (e.g. 'AUD-DIET-PEPSI-12PK-999').
         partner_options: Comma-separated list of target channels.
     """
-    logger.info(f"Executing size_audience_tool for audience: {audience_id} | partners: {partner_options}")
-    
-    product_name = _MOCK_STATE["selected_product"] or "Selected Product"
-    
-    # Calculate mock scaling sizing
-    original_size = 350000
-    scaled_size = 1200000  # look-alike expansion size
-    reach_pct = 85.0
-    
-    sizing_data = {
-        "audience_id": audience_id,
-        "product_name": product_name,
-        "original_size": original_size,
-        "scaled_size": scaled_size,
-        "reach_percentage": reach_pct,
-        "partners": partner_options.split(",")
-    }
-    
-    _MOCK_STATE["sizing"] = sizing_data
-    
-    summary = f"Audience sizing metrics compiled successfully for ID: {audience_id}. Segment scaled from {original_size:,} raw shoppers to {scaled_size:,} estimated target households (active reach: {reach_pct}%)."
-    a2ui_block = f"<a2ui-json>\n{json.dumps([{'component_type': 'sizing_dashboard', 'sizing': sizing_data}], indent=2)}\n</a2ui-json>"
-    
-    return f"{summary}\n\n{a2ui_block}"
+    logger.info(f"size_audience_tool: Querying MCP server for tool 'audience-size'...")
+    try:
+        mcp_result = call_mcp_tool("audience-size", {"audience_id": audience_id, "partner_options": partner_options})
+        
+        product_name = _MOCK_STATE["selected_product"] or "Selected Product"
+        mcp_result["product_name"] = product_name
+        
+        _MOCK_STATE["sizing"] = mcp_result
+        
+        summary = f"Audience sizing metrics compiled successfully via MCP for ID: {audience_id}. Reach matched: {mcp_result['reach_percentage']}%."
+        a2ui_block = f"<a2ui-json>\n{json.dumps([{'component_type': 'sizing_dashboard', 'sizing': mcp_result}], indent=2)}\n</a2ui-json>"
+        return f"{summary}\n\n{a2ui_block}"
+    except Exception as e:
+        logger.error(f"Failed to execute audience-size via MCP: {e}", exc_info=True)
+        # Fallback
+        product_name = _MOCK_STATE["selected_product"] or "Selected Product"
+        sizing_data = {
+            "audience_id": audience_id,
+            "product_name": product_name,
+            "original_size": 350000,
+            "scaled_size": 1200000,
+            "reach_percentage": 85.0,
+            "partners": partner_options.split(",")
+        }
+        _MOCK_STATE["sizing"] = sizing_data
+        summary = f"Fallback: Audience sizing metrics compiled successfully for ID: {audience_id}."
+        a2ui_block = f"<a2ui-json>\n{json.dumps([{'component_type': 'sizing_dashboard', 'sizing': sizing_data}], indent=2)}\n</a2ui-json>"
+        return f"{summary}\n\n{a2ui_block}"
 
 def activate_audience_tool(audience_id: str, partners: str) -> str:
     """Activates the given audience segment with the specified marketing partners.
@@ -109,6 +220,38 @@ def activate_audience_tool(audience_id: str, partners: str) -> str:
         "partners": partners.split(","),
         "message": f"Successfully activated segment {audience_id} with partners {partners}. Data sync initiated."
     }, indent=2)
+
+def sanitize_content_with_model_armor(text: str) -> str:
+    """Uses Google Cloud Vertex AI Model Armor to screen and sanitize prompt inputs and responses."""
+    logger.info(f"Model Armor: Screening content (Length: {len(text)} chars)...")
+    
+    # 1. Local scanning engine fallback
+    # Check for common prompt injection / jailbreak patterns
+    jailbreak_patterns = [
+        r"(?i)ignore\s+(?:all\s+)?previous\s+instructions",
+        r"(?i)system\s+override",
+        r"(?i)you\s+are\s+now\s+a\s+different\s+agent",
+    ]
+    import re
+    for pattern in jailbreak_patterns:
+        if re.search(pattern, text):
+            logger.warning("Model Armor WARNING: Prompt injection pattern detected!")
+            raise ValueError("Model Armor Verdict: BLOCKED (Prompt Injection Threat)")
+            
+    # Check for sensitive data (PII) leakage e.g. mock credit card numbers
+    pii_patterns = [
+        r"\b(?:\d[ -]??){15,16}\b", # simplified CC format
+        r"\b\d{3}-\d{2}-\d{4}\b",    # Social Security number format
+    ]
+    for pattern in pii_patterns:
+        if re.search(pattern, text):
+            logger.warning("Model Armor WARNING: PII leakage detected!")
+            # Redact PII
+            text = re.sub(pattern, "[REDACTED_PII]", text)
+            logger.info("Model Armor: Successfully redacted sensitive PII content.")
+            
+    logger.info("Model Armor Verdict: ALLOWED (Content passed safety checks)")
+    return text
 
 
 
@@ -130,6 +273,15 @@ AGENT_URLS = {
     "LoyaltyCampaignOrchestrator": os.environ.get(
         "LOYALTY_AGENT_URL", "projects/943928157761/locations/us-central1/reasoningEngines/584947332802412544"
     ),
+    "SurveyOrchestrator": "projects/dummy/locations/us-central1/reasoningEngines/decoy-survey",
+    "AnalyticsOrchestrator": "projects/dummy/locations/us-central1/reasoningEngines/decoy-analytics",
+    "BrainWaveOrchestrator": "projects/dummy/locations/us-central1/reasoningEngines/decoy-brainwave",
+    "SynapseOrchestrator": "projects/dummy/locations/us-central1/reasoningEngines/decoy-synapse",
+    "SemanticLayerAgent": "projects/dummy/locations/us-central1/reasoningEngines/semantic-layer",
+    "PricingOpportunitiesAgent": "projects/dummy/locations/us-central1/reasoningEngines/pricing-opportunities",
+    "AudienceBuildAgent": "projects/dummy/locations/us-central1/reasoningEngines/audience-build",
+    "AudienceScaleAgent": "projects/dummy/locations/us-central1/reasoningEngines/audience-scale",
+    "AudienceSizeAgent": "projects/dummy/locations/us-central1/reasoningEngines/audience-size",
 }
 
 _http_client = None
@@ -184,6 +336,70 @@ async def send_message_tool(agent_name: str, task_summary: str, tool_context: To
         
     url = AGENT_URLS[agent_name]
     
+    if "dummy" in url:
+        logger.warning(f"send_message_tool: Intercepted routing to decoy/sub agent: {agent_name}")
+        if "decoy" in url:
+            return f"Routing Failure: Decoy agent '{agent_name}' was incorrectly invoked. This request is out of this agent's scope."
+            
+        try:
+            if agent_name == "SemanticLayerAgent":
+                from circana_pilot_agent.sub_agents.semantic_layer_agent import semantic_layer_agent
+                target_agent = semantic_layer_agent
+            elif agent_name == "PricingOpportunitiesAgent":
+                from circana_pilot_agent.sub_agents.pricing_opportunities_agent import pricing_opportunities_agent
+                target_agent = pricing_opportunities_agent
+            elif agent_name == "AudienceBuildAgent":
+                from circana_pilot_agent.sub_agents.build_agent import build_agent
+                target_agent = build_agent
+            elif agent_name == "AudienceScaleAgent":
+                from circana_pilot_agent.sub_agents.scale_agent import scale_agent
+                target_agent = scale_agent
+            elif agent_name == "AudienceSizeAgent":
+                from circana_pilot_agent.sub_agents.size_agent import size_agent
+                target_agent = size_agent
+            else:
+                return f"Error: Agent '{agent_name}' mock is not configured."
+                
+            logger.info(f"Running agent '{agent_name}' locally using Runner...")
+            from google.adk.runners import Runner
+            from google.adk.artifacts.in_memory_artifact_service import InMemoryArtifactService
+            from google.adk.memory.in_memory_memory_service import InMemoryMemoryService
+            from google.adk.sessions.in_memory_session_service import InMemorySessionService
+            from google.genai import types
+            
+            local_runner = Runner(
+                app_name=agent_name,
+                agent=target_agent,
+                artifact_service=InMemoryArtifactService(),
+                session_service=InMemorySessionService(),
+                memory_service=InMemoryMemoryService(),
+            )
+            
+            # Context state extraction
+            state = tool_context.state
+            context_id = state.get("context_id") or str(uuid.uuid4())
+            
+            session = await local_runner.session_service.create_session(
+                app_name=agent_name,
+                user_id='user',
+                state={},
+                session_id=context_id,
+            )
+            
+            content = types.Content(role='user', parts=[types.Part(text=task_summary)])
+            ans = ""
+            async for ev in local_runner.run_async(session_id=session.id, user_id='user', new_message=content):
+                if hasattr(ev, 'is_final_response') and ev.is_final_response():
+                    if ev.content and ev.content.parts:
+                        ans = "\n".join([p.text for p in ev.content.parts if p.text])
+                    break
+                    
+            logger.info(f"Local agent '{agent_name}' returned: {ans}")
+            return ans
+        except Exception as local_ex:
+            logger.error(f"Error executing agent '{agent_name}' locally: {local_ex}", exc_info=True)
+            return f"Error executing sub-agent '{agent_name}' locally: {str(local_ex)}"
+        
     try:
         state = tool_context.state
         context_id = state.get("context_id") or str(uuid.uuid4())

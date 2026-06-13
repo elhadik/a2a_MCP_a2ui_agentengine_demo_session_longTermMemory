@@ -13,14 +13,14 @@ PRODUCT_TABLE_HTML_TEMPLATE = r"""<!DOCTYPE html>
     <title>Pricing opportunities Analysis</title>
     <style>
         :root {
-            --bg-color: #060509;
-            --card-bg: rgba(22, 14, 32, 0.7);
-            --text-primary: #f8fafc;
-            --text-secondary: #a0aec0;
-            --accent-primary: #7928ca;
-            --accent-secondary: #ff007f;
-            --border-color: rgba(121, 40, 202, 0.3);
-            --success: #00f0ff;
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --text-primary: #0f172a;
+            --text-secondary: #475569;
+            --accent-primary: #002f6c;
+            --accent-secondary: #00a4e4;
+            --border-color: #e2e8f0;
+            --success: #10b981;
             --warning: #f59e0b;
         }
         body {
@@ -174,16 +174,17 @@ SIZING_DASHBOARD_HTML_TEMPLATE = r"""<!DOCTYPE html>
     <meta content='connect-src "none"' http-equiv='Content-Security-Policy'>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <title>Audience Sizing & Activation</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
-            --bg-color: #060509;
-            --card-bg: rgba(22, 14, 32, 0.7);
-            --text-primary: #f8fafc;
-            --text-secondary: #a0aec0;
-            --accent-primary: #7928ca;
-            --accent-secondary: #ff007f;
-            --border-color: rgba(121, 40, 202, 0.3);
-            --success: #00f0ff;
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --text-primary: #0f172a;
+            --text-secondary: #475569;
+            --accent-primary: #002f6c;
+            --accent-secondary: #00a4e4;
+            --border-color: #e2e8f0;
+            --success: #10b981;
             --warning: #f59e0b;
         }
         body {
@@ -302,6 +303,22 @@ SIZING_DASHBOARD_HTML_TEMPLATE = r"""<!DOCTYPE html>
     </div>
 
     <div class="panel">
+        <div class="panel-title">Target Reach Distribution</div>
+        <div class="chart-container" style="position: relative; height: 180px; margin: 10px 0;">
+            <canvas id="myChart"></canvas>
+            <div id="svg-fallback" style="display:none; height:100%; align-items:center; justify-content:center;">
+                <!-- SVG fallback donut segment -->
+                <svg width="120" height="120" viewBox="0 0 42 42" class="donut">
+                    <circle class="donut-hole" cx="21" cy="21" r="15.91549430918954" fill="#ffffff"></circle>
+                    <circle class="donut-ring" cx="21" cy="21" r="15.91549430918954" fill="transparent" stroke="#e2e8f0" stroke-width="4"></circle>
+                    <circle class="donut-segment" cx="21" cy="21" r="15.91549430918954" fill="transparent" stroke="#002f6c" stroke-width="4" stroke-dasharray="45 55" stroke-dashoffset="25"></circle>
+                    <circle class="donut-segment" cx="21" cy="21" r="15.91549430918954" fill="transparent" stroke="#00a4e4" stroke-width="4" stroke-dasharray="35 65" stroke-dashoffset="80"></circle>
+                </svg>
+            </div>
+        </div>
+    </div>
+
+    <div class="panel">
         <div class="panel-title">Activation Channels</div>
         <div class="checkbox-group">
             <label class="checkbox-item">
@@ -322,6 +339,41 @@ SIZING_DASHBOARD_HTML_TEMPLATE = r"""<!DOCTYPE html>
         document.getElementById('product-context').textContent = `Cohort details for product: ${data.product_name || 'Selected Cohort'}`;
         document.getElementById('val-size').textContent = (data.scaled_size || 0).toLocaleString();
         document.getElementById('val-reach').textContent = `${data.reach_percentage || 0}%`;
+
+        // Initialize Chart.js doughnut
+        const ctx = document.getElementById('myChart');
+        if (typeof Chart !== 'undefined') {
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['LiveRamp Matched', 'Google Ads Matched', 'Unmatched Reach'],
+                    datasets: [{
+                        data: [45, 35, 20],
+                        backgroundColor: ['#002f6c', '#00a4e4', '#cbd5e1'],
+                        borderWidth: 1,
+                        borderColor: '#ffffff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                boxWidth: 10,
+                                font: { size: 9, family: 'Poppins' },
+                                color: '#475569'
+                            }
+                        }
+                    },
+                    cutout: '70%'
+                }
+            });
+        } else {
+            document.getElementById('myChart').style.display = 'none';
+            document.getElementById('svg-fallback').style.display = 'flex';
+        }
 
         document.getElementById('btn-submit').onclick = () => {
             const checkedBoxes = document.querySelectorAll("input[name='partner']:checked");
@@ -420,14 +472,14 @@ LOYALTY_CAMPAIGN_HTML_TEMPLATE = r"""<!DOCTYPE html>
     <title>Loyalty Campaign Activation</title>
     <style>
         :root {
-            --bg-color: #060509;
-            --card-bg: rgba(22, 14, 32, 0.7);
-            --text-primary: #f8fafc;
-            --text-secondary: #a0aec0;
-            --accent-primary: #7928ca;
-            --accent-secondary: #ff007f;
-            --border-color: rgba(121, 40, 202, 0.3);
-            --success: #00f0ff;
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --text-primary: #0f172a;
+            --text-secondary: #475569;
+            --accent-primary: #002f6c;
+            --accent-secondary: #00a4e4;
+            --border-color: #e2e8f0;
+            --success: #10b981;
         }
         body {
             font-family: 'Poppins', system-ui, -apple-system, sans-serif;
