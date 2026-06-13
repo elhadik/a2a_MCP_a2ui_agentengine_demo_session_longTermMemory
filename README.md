@@ -196,13 +196,45 @@ sequenceDiagram
 ### ⚙️ Gemini Enterprise Agent Engine
 *   **Definition:** A managed runtime environment that packages Python code, dependencies, and parameters into a serialized execution graph (via Cloudpickle) and deploys it as an API endpoint.
 *   **System Integration:** All three Circana sub-agents are deployed as Cloud Agent Engine endpoints under Python 3.13 containers:
-    *   **Pricing Engine:** `projects/943928157761/locations/us-central1/reasoningEngines/3371690339726262272`
-    *   **Activate Engine:** `projects/943928157761/locations/us-central1/reasoningEngines/1265131614023712768`
-    *   **Loyalty Engine:** `projects/943928157761/locations/us-central1/reasoningEngines/7172728425226960896`
+    *   **Pricing Engine:** `projects/943928157761/locations/us-central1/reasoningEngines/5913690854400196608`
+    *   **Activate Engine:** `projects/943928157761/locations/us-central1/reasoningEngines/3977143014630883328`
+    *   **Loyalty Engine:** `projects/943928157761/locations/us-central1/reasoningEngines/4675200956873310208`
 *   **Official Citation:**
     > *"Gemini Enterprise Agent Engine lets you deploy python-based orchestration frameworks (such as LangChain or custom agent models) to Google Cloud as fully-managed endpoints."* — [Google Cloud Gemini Enterprise Agent Engine Guide](https://cloud.google.com/vertex-ai/generative-ai/docs/reasoning-engine/overview)
 *   **Live Proof-of-Deployment (Agent Engine Endpoints):**
     ![GCP Agent Engine Registered Endpoints](architecture/screenshots/agent_engine_registered.png)
+
+### 👥 Multi-Agent Teamwork Topology & Active Registry
+The system utilizes a hub-and-spoke supervisor pattern. The root supervisor orchestrates the pipeline phases, parses A2UI layout responses, and coordinates state transitions.
+
+```mermaid
+graph TD
+    User([User Interface / Session]) -->|1. Chat/Callback Event| Supervisor[CircanaPilotSupervisor]
+    
+    Supervisor -->|2a. Delegate Phase A| Pricing[PricingAssortmentOrchestrator]
+    Supervisor -->|2b. Delegate Phase B/C| Activate[LiquidActivateOrchestrator]
+    Supervisor -->|2c. Delegate Phase D| Loyalty[LoyaltyCampaignOrchestrator]
+    
+    Pricing -->|Query Attrition| Tool1[pricing_opportunities_tool]
+    Activate -->|Compute Sizing| Tool2[audience_sizing_tool]
+    Activate -->|Sync Segment| Tool3[activate_segment_tool]
+    Loyalty -->|Fetch Offer Config| Tool4[get_loyalty_options_tool]
+    Loyalty -->|Launch Rewards| Tool5[launch_campaign_tool]
+    
+    style Supervisor fill:#f8fafc,stroke:#002f6c,stroke-width:2px;
+    style Pricing fill:#e0f2fe,stroke:#0284c7,stroke-width:1px;
+    style Activate fill:#ecfdf5,stroke:#059669,stroke-width:1px;
+    style Loyalty fill:#fffbeb,stroke:#d97706,stroke-width:1px;
+```
+
+#### Active Registry Topology
+
+| Agent Name | Role & Objective | Deployed Endpoint (Vertex AI) | Exposed Skills |
+| :--- | :--- | :--- | :--- |
+| **CircanaPilotSupervisor** | Root coordinator supervising the multi-agent pipeline and managing session state. | *Local web server executor* | Pipeline routing, callback execution, A2UI normalization. |
+| **PricingAssortmentOrchestrator** | specialist agent identifying pricing opportunities and category buyer loss. | `projects/943928157761/locations/us-central1/reasoningEngines/5913690854400196608` | Portfolio search, category shopper attrition mapping. |
+| **LiquidActivateOrchestrator** | specialist agent coordinating cohort audience sizing and activation exports. | `projects/943928157761/locations/us-central1/reasoningEngines/3977143014630883328` | Audience sizing, LiveRamp/Google Customer Match sync. |
+| **LoyaltyCampaignOrchestrator** | specialist agent customizing personalization parameters and reward launches. | `projects/943928157761/locations/us-central1/reasoningEngines/4675200956873310208` | Campaign personalization, loyalty rewards activation. |
 
 ---
 
