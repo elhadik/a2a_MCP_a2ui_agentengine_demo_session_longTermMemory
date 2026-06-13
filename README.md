@@ -332,3 +332,22 @@ source .venv/bin/activate
 uvicorn web_app.server:app --host 0.0.0.0 --port 8000
 ```
 Open your browser and navigate to `http://localhost:8000` to start orchestrating.
+
+---
+
+## 7. Developer Utility Scripts
+
+### Deploying Sub-Agents
+To package and deploy/redeploy the Pricing, Activation, and Loyalty orchestrator agents to Gemini Enterprise Agent Engine:
+```bash
+.venv/bin/python3 deploy.py
+```
+This script serializes the execution graphs, uploads dependencies to the Cloud Storage bucket (`gs://shade-agent-staging`), and registers the reasoning engines in Vertex AI.
+
+### Cleaning Up Redundant Endpoints
+To avoid endpoint sprawl and remove old reasoning engine deployments:
+```bash
+.venv/bin/python3 scripts/delete_unused_engines.py
+```
+This utility fetches all active reasoning engine deployments, matches them against the current IDs declared in your `.env` configuration, and rate-limits the deletion of any unreferenced/orphaned engines in the GCP project.
+

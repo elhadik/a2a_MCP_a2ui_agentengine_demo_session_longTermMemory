@@ -548,6 +548,79 @@ async def send_message_tool(agent_name: str, task_summary: str, tool_context: To
             s = re.sub(r'\\\s*\n', '\n', s)
             return s.strip()
 
+        def extract_and_format_widget(payload: dict) -> list:
+            """Detects A2UI payloads (custom WebFrameSrcdoc or standard native layouts) and converts them to portal-renderable WebFrameSrcdoc format."""
+            if not isinstance(payload, dict):
+                return [payload]
+                
+            # If it is already a WebFrameSrcdoc update, return it as-is
+            if "WebFrameSrcdoc" in str(payload):
+                return [payload]
+                
+            # Import builders dynamically to avoid circular import issues
+            try:
+                from .components import get_product_table_a2ui, get_sizing_dashboard_a2ui, get_loyalty_dashboard_a2ui
+            except ImportError:
+                from components import get_product_table_a2ui, get_sizing_dashboard_a2ui, get_loyalty_dashboard_a2ui
+                
+            comp_type = payload.get("component_type")
+            
+            # 1. Product Table Match
+            if comp_type == "product_table" or "products" in payload:
+                products_data = payload.get("products")
+                if isinstance(products_data, dict) and "data" in products_data:
+                    products_list = products_data["data"]
+                elif isinstance(products_data, list):
+                    products_list = products_data
+                else:
+                    products_list = []
+                    
+                if products_list:
+                    full_a2ui_str = get_product_table_a2ui(products_list)
+                    full_json_str = full_a2ui_str.replace("<a2ui-json>", "").replace("</a2ui-json>", "").strip()
+                    return json.loads(full_json_str)
+
+            # 2. Native Table inside DataDisplayCard Match
+            if comp_type == "DataDisplayCard" or "properties" in payload:
+                props = payload.get("properties") or {}
+                children = props.get("children") or []
+                for child in children:
+                    if child.get("component_type") == "Table":
+                        rows = child.get("properties", {}).get("rows") or []
+                        products_list = []
+                        for row in rows:
+                            if len(row) >= 3:
+                                try:
+                                    lost_str = row[1].get("text", "0").replace("%", "").strip()
+                                    vol_str = row[2].get("text", "0").replace("%", "").strip()
+                                    products_list.append({
+                                        "product_name": row[0].get("text", "Unknown"),
+                                        "lost_households_pct": float(lost_str) if lost_str else 0.0,
+                                        "volume_change": float(vol_str) if vol_str else 0.0
+                                    })
+                                except Exception:
+                                    pass
+                        if products_list:
+                            full_a2ui_str = get_product_table_a2ui(products_list)
+                            full_json_str = full_a2ui_str.replace("<a2ui-json>", "").replace("</a2ui-json>", "").strip()
+                            return json.loads(full_json_str)
+
+            # 3. Sizing Dashboard Match
+            if comp_type == "sizing_dashboard" or "sizing" in payload or "original_size" in str(payload):
+                sizing_data = payload.get("sizing") or payload
+                full_a2ui_str = get_sizing_dashboard_a2ui(sizing_data)
+                full_json_str = full_a2ui_str.replace("<a2ui-json>", "").replace("</a2ui-json>", "").strip()
+                return json.loads(full_json_str)
+
+            # 4. Loyalty Dashboard Match
+            if comp_type == "loyalty_dashboard" or "loyalty" in payload or "shoppers_isolated" in str(payload):
+                loyalty_data = payload.get("loyalty") or payload
+                full_a2ui_str = get_loyalty_dashboard_a2ui(loyalty_data)
+                full_json_str = full_a2ui_str.replace("<a2ui-json>", "").replace("</a2ui-json>", "").strip()
+                return json.loads(full_json_str)
+                
+            return [payload]
+
         text_parts = []
         for msg in agent_messages:
             for part in msg.parts:
@@ -562,35 +635,11 @@ async def send_message_tool(agent_name: str, task_summary: str, tool_context: To
                             json_str = _sanitize_json(match.group(1))
                             payloads = json.loads(json_str)
                             
-                            # Import builders dynamically to avoid circular import issues
-                            try:
-                                from .components import get_product_table_a2ui, get_sizing_dashboard_a2ui, get_loyalty_dashboard_a2ui
-                            except ImportError:
-                                from components import get_product_table_a2ui, get_sizing_dashboard_a2ui, get_loyalty_dashboard_a2ui
-                            
                             def process_payload(payload):
-                                comp_type = payload.get("component_type")
-                                if comp_type == "product_table":
-                                    full_a2ui_str = get_product_table_a2ui(payload["products"])
-                                    full_json_str = full_a2ui_str.replace("<a2ui-json>", "").replace("</a2ui-json>", "").strip()
-                                    full_payload = json.loads(full_json_str)
-                                    for sub_p in full_payload:
-                                        _MOCK_STATE["active_data_parts"].append(sub_p)
-                                elif comp_type == "sizing_dashboard":
-                                    full_a2ui_str = get_sizing_dashboard_a2ui(payload["sizing"])
-                                    full_json_str = full_a2ui_str.replace("<a2ui-json>", "").replace("</a2ui-json>", "").strip()
-                                    full_payload = json.loads(full_json_str)
-                                    for sub_p in full_payload:
-                                        _MOCK_STATE["active_data_parts"].append(sub_p)
-                                elif comp_type == "loyalty_dashboard":
-                                    full_a2ui_str = get_loyalty_dashboard_a2ui(payload["loyalty"])
-                                    full_json_str = full_a2ui_str.replace("<a2ui-json>", "").replace("</a2ui-json>", "").strip()
-                                    full_payload = json.loads(full_json_str)
-                                    for sub_p in full_payload:
-                                        _MOCK_STATE["active_data_parts"].append(sub_p)
-                                else:
-                                    _MOCK_STATE["active_data_parts"].append(payload)
-
+                                normalized = extract_and_format_widget(payload)
+                                for sub_p in normalized:
+                                    _MOCK_STATE["active_data_parts"].append(sub_p)
+                                    
                             if isinstance(payloads, list):
                                 for p in payloads:
                                     process_payload(p)
@@ -607,40 +656,13 @@ async def send_message_tool(agent_name: str, task_summary: str, tool_context: To
                 elif hasattr(part.root, 'data') and part.root.data:
                     data_val = part.root.data
                     print(f"[DEBUG tools.py] Caching data part: {list(data_val.keys())}")
-                    
                     try:
-                        from .components import get_product_table_a2ui, get_sizing_dashboard_a2ui, get_loyalty_dashboard_a2ui
-                    except ImportError:
-                        from components import get_product_table_a2ui, get_sizing_dashboard_a2ui, get_loyalty_dashboard_a2ui
-                        
-                    comp_type = data_val.get("component_type")
-                    if comp_type:
-                        try:
-                            if comp_type == "product_table":
-                                full_a2ui_str = get_product_table_a2ui(data_val["products"])
-                                full_json_str = full_a2ui_str.replace("<a2ui-json>", "").replace("</a2ui-json>", "").strip()
-                                full_payload = json.loads(full_json_str)
-                                for sub_p in full_payload:
-                                    _MOCK_STATE["active_data_parts"].append(sub_p)
-                            elif comp_type == "sizing_dashboard":
-                                full_a2ui_str = get_sizing_dashboard_a2ui(data_val["sizing"])
-                                full_json_str = full_a2ui_str.replace("<a2ui-json>", "").replace("</a2ui-json>", "").strip()
-                                full_payload = json.loads(full_json_str)
-                                for sub_p in full_payload:
-                                    _MOCK_STATE["active_data_parts"].append(sub_p)
-                            elif comp_type == "loyalty_dashboard":
-                                full_a2ui_str = get_loyalty_dashboard_a2ui(data_val["loyalty"])
-                                full_json_str = full_a2ui_str.replace("<a2ui-json>", "").replace("</a2ui-json>", "").strip()
-                                full_payload = json.loads(full_json_str)
-                                for sub_p in full_payload:
-                                    _MOCK_STATE["active_data_parts"].append(sub_p)
-                            else:
-                                _MOCK_STATE["active_data_parts"].append(data_val)
-                            logger.info(f"[tools.py] Expanded and cached native DataPart component: {comp_type}")
-                        except Exception as expand_ex:
-                            logger.warning(f"[tools.py] Failed to expand native DataPart: {expand_ex}")
-                            _MOCK_STATE["active_data_parts"].append(data_val)
-                    else:
+                        normalized = extract_and_format_widget(data_val)
+                        for sub_p in normalized:
+                            _MOCK_STATE["active_data_parts"].append(sub_p)
+                        logger.info(f"[tools.py] Expanded and cached native DataPart component")
+                    except Exception as expand_ex:
+                        logger.warning(f"[tools.py] Failed to expand native DataPart: {expand_ex}")
                         _MOCK_STATE["active_data_parts"].append(data_val)
                         
         if not text_parts:

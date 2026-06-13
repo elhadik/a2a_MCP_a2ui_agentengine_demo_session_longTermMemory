@@ -23,3 +23,5 @@ Thumbs.db
 # Private client documents
 # (Included for architecture and walkthrough visual assets)
 
+# Logs
+*.log
