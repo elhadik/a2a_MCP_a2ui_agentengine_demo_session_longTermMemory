@@ -271,9 +271,20 @@ we programmatically route sub-agent communications through a custom `send_messag
 ---
 
 ### C. Human-in-the-Loop (HITL) State Suspension & A2UI widgets
-To provide a seamless marketer console experience, we implement **Human-in-the-Loop (HITL)** verification intervals:
-1. **Suspension**: When the Pricing Agent identifies cohort opportunities, it compiles a structured component schema and halts execution, outputting a custom `<a2ui-json>` block.
-2. **Resumption**: The frontend portal captures the `<a2ui-json>` block, renders an interactive HTML widget (pricing tables or sizing charts), and holds context. Once the user clicks "Select Cohort" or "Activate", the portal POSTs a resume callback request containing the action ID and payload variables back to the `SupervisorAgent`, resuming the execution graph.
+To provide a premium, application-like experience rather than a basic text chat, we leverage the **A2UI (Agent-to-User-Interface) Web Component** framework. 
+
+#### 1. Rich Interactive Web Canvas
+A2UI allows agents to project full-featured, stateful HTML/JS widgets directly into the user console interface:
+* **Interactive Components**: Agents construct structured JSON configurations defining tables, charts, and control panels (badges, sliders, checkboxes).
+* **Hover-over Tooltips**: Visual charts (such as the Reach Distribution graphs) render tooltips and details dynamically as the user hovers.
+* **Interactive Elements**: Users can select checkable partners (e.g. checking "LiveRamp" or "Google Customer Match" in the sizing dashboard), toggle configurations, and edit pricing rows.
+* **State Synchronization**: Actions taken in the sandboxed widget (clicks, toggles) immediately synchronize with the local session state.
+
+#### 2. Suspension & Resumption Flow
+This interaction is governed by state suspension and callback execution:
+1. **Suspension**: When the Pricing Agent identifies cohort opportunities, it halts the execution graph and returns a structured `<a2ui-json>` schema block to the supervisor.
+2. **Dynamic Rendering**: The frontend portal parses this block and renders a custom interactive sandbox.
+3. **Resumption**: When the user performs an action (e.g., clicking a button inside the pricing table or clicking "Activate" after checking destination partners), the portal intercepts the click event and POSTs a resume callback request back to the `SupervisorAgent`, triggering the next node in the multi-agent graph.
 
 ---
 
