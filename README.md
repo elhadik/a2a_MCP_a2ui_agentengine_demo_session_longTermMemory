@@ -17,7 +17,7 @@ Explore the E2E user flow of the Multi-Agent Portal, showing session initializat
 The application is built on the **Google Cloud Agent Platform**, implementing a secure, stateful multi-agent hierarchy governed by Model Armor and integrated with custom tools via the Model Context Protocol (MCP):
 
 ```mermaid
-graph TB
+graph TD
     subgraph Client Layer [Client Console]
         User([Marketer Console]) <-->|HTTPS / HTML Widgets| Portal[FastAPI Portal App]
         PortalDB[(Local HTTP Session Store)] <--> Portal
@@ -34,20 +34,20 @@ graph TB
             Supervisor["Supervisor Agent (PilotSupervisor)"]
             
             subgraph Pricing Service [Pricing Assortment Orchestrator]
-                PricingOrch["Orchestrator Agent"]
-                SemanticAgent["Semantic Layer Agent (Entity Resolver)"]
+                PricingOrch["Pricing Orchestrator Agent"]
+                SemanticAgent["Semantic Layer Agent"]
                 PricingOppAgent["Pricing Opportunities Agent"]
             end
             
             subgraph Activation Service [Liquid Activate Orchestrator]
-                ActivateOrch["Orchestrator Agent"]
+                ActivateOrch["Activation Orchestrator Agent"]
                 BuildAgent["Audience Build Agent"]
                 SizeAgent["Audience Size Agent"]
                 ScaleAgent["Audience Scale Agent (Stub)"]
             end
 
             subgraph Decoys [Precision Routing Verification]
-                LoyaltyOrch["Loyalty Campaign Orchestrator (Decoy)"]
+                LoyaltyOrch["Loyalty Campaign Agent (Decoy)"]
             end
         end
 
@@ -70,9 +70,9 @@ graph TB
     Supervisor -.->|Query Catalog| AgentRegistry
     
     %% Orchestration Delegation (A2A)
-    Supervisor ===>|A2A Protocol| PricingService
-    Supervisor ===>|A2A Protocol| ActivationService
-    Supervisor -.->|Decoy Route Validation| Decoys
+    Supervisor ===>|A2A Protocol| PricingOrch
+    Supervisor ===>|A2A Protocol| ActivateOrch
+    Supervisor -.->|Decoy Route Validation| LoyaltyOrch
     
     PricingOppAgent -->|Query Metrics| PricingAPI
     BuildAgent -.->|Resolve Tool| MCPRegistry
@@ -85,6 +85,19 @@ graph TB
     %% UI Projection (A2UI)
     Supervisor -->|4. Template Expansion| Portal
     Portal -->|5. Render iframe Sandbox| User
+
+    %% Style Definitions
+    classDef client fill:#E1F5FE,stroke:#03A9F4,stroke-width:2px,color:#01579B;
+    classDef security fill:#FFEBEE,stroke:#EF5350,stroke-width:2px,color:#B71C1C;
+    classDef runtime fill:#E8F5E9,stroke:#4CAF50,stroke-width:2px,color:#1B5E20;
+    classDef registry fill:#FFF8E1,stroke:#FFC107,stroke-width:2px,color:#FF6F00;
+    classDef database fill:#EDE7F6,stroke:#673AB7,stroke-width:2px,color:#4A148C;
+
+    class User,Portal,PortalDB client;
+    class ModelArmor security;
+    class Supervisor,PricingOrch,SemanticAgent,PricingOppAgent,ActivateOrch,BuildAgent,SizeAgent,ScaleAgent,LoyaltyOrch runtime;
+    class AgentRegistry,MCPRegistry registry;
+    class CloudRunMCP,OnPremDB,PricingAPI database;
 ```
 
 ### Core Architecture Components
