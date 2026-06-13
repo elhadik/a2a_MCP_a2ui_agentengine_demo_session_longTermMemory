@@ -27,7 +27,7 @@ Conversations across different agents are structured using the standard A2A mess
 *   **GenAI SDK Reasoning Engine Client:** Resolves the Remote Reasoning Engine in the cloud and executes the task.
 *   **Simplified JSON Payload:** Sub-agents return data packages natively inside A2A `DataPart` structures rather than raw text, keeping LLM communication clean and structured.
 
-![A2A Sequence Flow](static/sequence_diagram.png)
+![A2A & A2UI Sequence Flow](static/sequence_diagram_premium.png)
 
 ### A2UI (Agent-to-User-Interface) Protocol
 To enable interactive widgets (tables, check-boxes, and buttons) inside the portal, the system utilizes the **A2UI Protocol**:
@@ -37,7 +37,19 @@ To enable interactive widgets (tables, check-boxes, and buttons) inside the port
 
 ---
 
-## 3. Step-by-Step Deployment Guide
+## 3. Human-in-the-Loop (HITL) Flow
+
+To prevent AI from executing critical actions asynchronously without supervision (e.g., spending advertising budgets or triggering bulk cohorts exports), the portal implements a strict **Human-in-the-Loop (HITL)** interaction model using **ADK / A2UI interactive callbacks**:
+
+1. **Checkpoint Interrupt:** When a sub-agent executes a task that requires user confirmation, it returns a structured interactive layout instead of proceeding automatically.
+2. **Interactive Rendering:** The frontend renders this layout as an interactive widget (e.g., checkboxes for LiveRamp and Google Ads, or a "Select Cohort" action button in a products table).
+3. **Execution Pause:** The LLM's turn completes, leaving the portal in an idle state awaiting user action.
+4. **Resuming via Action Callback:** When the user clicks a button or checks a partner box, the frontend triggers a `USER_ACTION` payload sent to the `/api/action` endpoint.
+5. **Context Ingestion:** The backend server captures the callback variables, translates them into a clear semantic prompt describing the user's action (e.g., `"Action received: activate the segment on channels: LiveRamp. Proceed to export."`), and starts a new agent run context to execute the confirmation.
+
+---
+
+## 4. Step-by-Step Deployment Guide
 
 ### Prerequisites
 *   Python 3.10+
