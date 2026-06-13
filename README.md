@@ -70,11 +70,20 @@ cd agents
 export $(cat ../.env | xargs)
 PYTHONPATH=. ../.venv310/bin/python3 ../deploy.py
 ```
-Upon completion, the deployment output will display the Reasoning Engine resource IDs. Update your `.env` file with these values:
+Upon completion, the deployment output will display the Reasoning Engine resource IDs. Update your `.env` file with these values for remote cloud resolution:
 ```env
-PRICING_AGENT_URL=projects/943928157761/locations/us-central1/reasoningEngines/7074352920866586624
-ACTIVATE_AGENT_URL=projects/943928157761/locations/us-central1/reasoningEngines/2906271465735192576
-LOYALTY_AGENT_URL=projects/943928157761/locations/us-central1/reasoningEngines/8553785398457794560
+# Remote Cloud Deployment Endpoint Format:
+PRICING_AGENT_URL=projects/your-project-id/locations/us-central1/reasoningEngines/your-engine-id-1
+ACTIVATE_AGENT_URL=projects/your-project-id/locations/us-central1/reasoningEngines/your-engine-id-2
+LOYALTY_AGENT_URL=projects/your-project-id/locations/us-central1/reasoningEngines/your-engine-id-3
+```
+
+Alternatively, if you run the sub-agents locally (for faster iteration loops using local A2A servers), configure your `.env` to point to the local server ports:
+```env
+# Local Development Endpoint Format:
+PRICING_AGENT_URL=http://localhost:10102
+ACTIVATE_AGENT_URL=http://localhost:10103
+LOYALTY_AGENT_URL=http://localhost:10104
 ```
 
 ### Step 3: Run the Local Web Application Portal
