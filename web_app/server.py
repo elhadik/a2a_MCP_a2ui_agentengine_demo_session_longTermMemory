@@ -2,6 +2,7 @@ import os
 import sys
 import uuid
 import logging
+import datetime
 from typing import Dict, Any, List
 from fastapi import FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
@@ -19,10 +20,32 @@ from a2a.server.agent_execution import RequestContext
 from a2a.server.events import EventQueue, EventConsumer
 from a2a.types import Message, Role, TextPart, DataPart, Part
 
+import vertexai
+from google.genai import types
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("web_app_server")
 
 app = FastAPI(title="Circana Orchestrator Local Test Platform")
+
+# Initialize Vertex AI & GenAI Client
+project_id = os.environ.get("PROJECT_ID", "shade-sandbox")
+location = os.environ.get("LOCATION", "us-central1")
+api_endpoint = f"{location}-aiplatform.googleapis.com"
+
+vertexai.init(
+    project=project_id,
+    location=location,
+    api_endpoint=api_endpoint
+)
+
+genai_client = vertexai.Client(
+    project=project_id,
+    location=location,
+    http_options=types.HttpOptions(api_version="v1beta1")
+)
+
+agent_url = os.environ.get("PRICING_AGENT_URL")
 
 class ChatRequest(BaseModel):
     message: str
@@ -73,11 +96,136 @@ async def run_executor_turn(session_id: str, prompt_part: Part) -> Dict[str, Any
         "widgets": a2ui_widgets
     }
 
+@app.get("/api/sessions")
+async def list_sessions():
+    try:
+        logger.info(f"Listing sessions for agent: {agent_url}")
+        sessions_page = genai_client.agent_engines.sessions.list(name=agent_url)
+        sessions_list = []
+        for s in sessions_page:
+            session_id = s.name.split("/")[-1]
+            sessions_list.append({
+                "id": session_id,
+                "name": s.name,
+                "create_time": s.create_time.isoformat() if s.create_time else None,
+                "user_id": s.user_id
+            })
+        # Sort sessions by create_time descending if available
+        sessions_list.sort(key=lambda x: x["create_time"] or "", reverse=True)
+        return sessions_list
+    except Exception as e:
+        logger.error(f"Error listing sessions: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/sessions")
+async def create_session():
+    try:
+        logger.info(f"Creating session for agent: {agent_url}")
+        operation = genai_client.agent_engines.sessions.create(
+            name=agent_url,
+            user_id="user"
+        )
+        session = operation.response
+        session_id = session.name.split("/")[-1]
+        return {
+            "id": session_id,
+            "name": session.name,
+            "create_time": session.create_time.isoformat() if session.create_time else None
+        }
+    except Exception as e:
+        logger.error(f"Error creating session: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/sessions/{session_id}")
+async def get_session_history(session_id: str):
+    try:
+        session_name = f"{agent_url}/sessions/{session_id}"
+        logger.info(f"Fetching history events for session: {session_name}")
+        events = genai_client.agent_engines.sessions.events.list(name=session_name)
+        history = []
+        for ev in events:
+            role = "user" if ev.author == "user" else "assistant"
+            text_parts = []
+            widgets = []
+            
+            if ev.content and ev.content.parts:
+                for part in ev.content.parts:
+                    if hasattr(part, 'text') and part.text:
+                        text_parts.append(part.text)
+            
+            # Extract widgets from custom_metadata if present
+            if ev.event_metadata and ev.event_metadata.custom_metadata and "widgets" in ev.event_metadata.custom_metadata:
+                widgets = ev.event_metadata.custom_metadata["widgets"]
+                
+            history.append({
+                "role": role,
+                "text": "\n".join(text_parts),
+                "timestamp": ev.timestamp.isoformat() if ev.timestamp else None,
+                "widgets": widgets
+            })
+        return history
+    except Exception as e:
+        logger.error(f"Error fetching session history for {session_id}: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.delete("/api/sessions/{session_id}")
+async def delete_session(session_id: str):
+    try:
+        session_name = f"{agent_url}/sessions/{session_id}"
+        logger.info(f"Deleting session: {session_name}")
+        genai_client.agent_engines.sessions.delete(name=session_name)
+        return {"status": "deleted"}
+    except Exception as e:
+        logger.error(f"Error deleting session {session_id}: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.post("/api/chat")
 async def chat_endpoint(req: ChatRequest):
     try:
         logger.info(f"Received chat request for session {req.session_id}: {req.message}")
+        session_name = f"{agent_url}/sessions/{req.session_id}"
+        
+        # 1. Append User Event
+        try:
+            genai_client.agent_engines.sessions.events.append(
+                name=session_name,
+                author="user",
+                invocation_id=str(uuid.uuid4()),
+                timestamp=datetime.datetime.now(datetime.timezone.utc),
+                config={
+                    "content": types.Content(
+                        role="user",
+                        parts=[types.Part(text=req.message)]
+                    )
+                }
+            )
+        except Exception as se:
+            logger.error(f"Failed to append user message event to session: {se}")
+            
         result = await run_executor_turn(req.session_id, Part(root=TextPart(text=req.message)))
+        
+        # 2. Append Agent Response Event
+        try:
+            genai_client.agent_engines.sessions.events.append(
+                name=session_name,
+                author="agent",
+                invocation_id=str(uuid.uuid4()),
+                timestamp=datetime.datetime.now(datetime.timezone.utc),
+                config={
+                    "content": types.Content(
+                        role="model",
+                        parts=[types.Part(text=result["text"])]
+                    ),
+                    "event_metadata": {
+                        "custom_metadata": {
+                            "widgets": result["widgets"]
+                        }
+                    }
+                }
+            )
+        except Exception as se:
+            logger.error(f"Failed to append agent response event to session: {se}")
+            
         return result
     except Exception as e:
         logger.error(f"Error in chat endpoint: {e}", exc_info=True)
@@ -87,7 +235,50 @@ async def chat_endpoint(req: ChatRequest):
 async def action_endpoint(req: ActionRequest):
     try:
         logger.info(f"Received action request for session {req.session_id}: {req.action}")
+        session_name = f"{agent_url}/sessions/{req.session_id}"
+        
+        # 1. Append Action click User Event
+        try:
+            click_desc = f"Clicked action: {req.action.get('actionId') or str(req.action)}"
+            genai_client.agent_engines.sessions.events.append(
+                name=session_name,
+                author="user",
+                invocation_id=str(uuid.uuid4()),
+                timestamp=datetime.datetime.now(datetime.timezone.utc),
+                config={
+                    "content": types.Content(
+                        role="user",
+                        parts=[types.Part(text=click_desc)]
+                    )
+                }
+            )
+        except Exception as se:
+            logger.error(f"Failed to append action click event to session: {se}")
+            
         result = await run_executor_turn(req.session_id, Part(root=DataPart(data=req.action)))
+        
+        # 2. Append Agent Response Event
+        try:
+            genai_client.agent_engines.sessions.events.append(
+                name=session_name,
+                author="agent",
+                invocation_id=str(uuid.uuid4()),
+                timestamp=datetime.datetime.now(datetime.timezone.utc),
+                config={
+                    "content": types.Content(
+                        role="model",
+                        parts=[types.Part(text=result["text"])]
+                    ),
+                    "event_metadata": {
+                        "custom_metadata": {
+                            "widgets": result["widgets"]
+                        }
+                    }
+                }
+            )
+        except Exception as se:
+            logger.error(f"Failed to append agent response event to session: {se}")
+            
         return result
     except Exception as e:
         logger.error(f"Error in action endpoint: {e}", exc_info=True)
@@ -95,3 +286,4 @@ async def action_endpoint(req: ActionRequest):
 
 # Serve the static files from the static directory under the root URL
 app.mount("/", StaticFiles(directory=os.path.join(os.path.dirname(__file__), "static"), html=True), name="static")
+

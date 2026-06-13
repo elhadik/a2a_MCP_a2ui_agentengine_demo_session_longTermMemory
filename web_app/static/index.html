@@ -34,9 +34,20 @@
             </div>
         </header>
 
-        <!-- Main Content (Split Screen) -->
+        <!-- Main Content (Three-Column Workspace) -->
         <main class="app-main">
-            <!-- Left Side: Chat Workspace -->
+            <!-- Left Column: Sessions Sidebar -->
+            <section class="pane sidebar-pane">
+                <div class="pane-header">
+                    <h2>Conversations</h2>
+                    <button class="btn-new-chat" id="btn-new-chat" title="New conversation">+</button>
+                </div>
+                <div class="sessions-list" id="sessions-list">
+                    <div class="session-loading">Loading chats...</div>
+                </div>
+            </section>
+
+            <!-- Middle Column: Chat Workspace -->
             <section class="pane chat-pane">
                 <div class="pane-header">
                     <h2>Conversational AI Interface</h2>

@@ -1,6 +1,6 @@
 // App state
-const sessionId = "session-" + Math.random().toString(36).substring(2, 10);
-document.getElementById('session-display').textContent = `Session ID: ${sessionId}`;
+let activeSessionId = null;
+let activeWidgets = 0;
 
 const chatMessages = document.getElementById('chat-messages');
 const userInput = document.getElementById('user-input');
@@ -8,8 +8,8 @@ const btnSend = document.getElementById('btn-send');
 const sandboxContent = document.getElementById('sandbox-content');
 const emptyState = document.getElementById('empty-state');
 const widgetBadge = document.getElementById('widget-badge');
-
-let activeWidgets = 0;
+const sessionsListContainer = document.getElementById('sessions-list');
+const btnNewChat = document.getElementById('btn-new-chat');
 
 // Indicators
 const indicators = {
@@ -116,9 +116,160 @@ function renderA2UIWidget(widget) {
     sandboxContent.insertBefore(card, sandboxContent.firstChild);
 }
 
+// Session Management REST Calls
+async function loadSessions() {
+    try {
+        const response = await fetch('/api/sessions');
+        if (!response.ok) throw new Error("Failed to list sessions");
+        const sessions = await response.json();
+        
+        sessionsListContainer.innerHTML = '';
+        if (sessions.length === 0) {
+            sessionsListContainer.innerHTML = '<div class="session-loading">No conversations yet</div>';
+            await createNewSession();
+            return;
+        }
+        
+        sessions.forEach(s => {
+            const item = document.createElement('div');
+            item.className = `session-item ${s.id === activeSessionId ? 'active' : ''}`;
+            item.dataset.id = s.id;
+            
+            const details = document.createElement('div');
+            details.className = 'session-details';
+            details.onclick = () => selectSession(s.id);
+            
+            const name = document.createElement('span');
+            name.className = 'session-name';
+            name.textContent = `Session: ${s.id.substring(0, 8)}`;
+            
+            const time = document.createElement('span');
+            time.className = 'session-time';
+            if (s.create_time) {
+                const date = new Date(s.create_time);
+                time.textContent = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + " " + date.toLocaleDateString();
+            } else {
+                time.textContent = "unknown";
+            }
+            
+            details.appendChild(name);
+            details.appendChild(time);
+            
+            const btnDelete = document.createElement('button');
+            btnDelete.className = 'btn-delete-session';
+            btnDelete.innerHTML = '🗑️';
+            btnDelete.onclick = (e) => {
+                e.stopPropagation();
+                deleteSession(s.id);
+            };
+            
+            item.appendChild(details);
+            item.appendChild(btnDelete);
+            sessionsListContainer.appendChild(item);
+        });
+        
+        if (!activeSessionId && sessions.length > 0) {
+            selectSession(sessions[0].id);
+        }
+    } catch (err) {
+        console.error("Load sessions error:", err);
+        sessionsListContainer.innerHTML = '<div class="session-loading">Error loading conversations</div>';
+    }
+}
+
+async function createNewSession() {
+    try {
+        const response = await fetch('/api/sessions', { method: 'POST' });
+        if (!response.ok) throw new Error("Failed to create new session");
+        const data = await response.json();
+        activeSessionId = data.id;
+        
+        await loadSessions();
+        selectSession(data.id);
+    } catch (err) {
+        console.error("Create session error:", err);
+    }
+}
+
+async function deleteSession(id) {
+    if (!confirm("Are you sure you want to delete this conversation?")) return;
+    try {
+        const response = await fetch(`/api/sessions/${id}`, { method: 'DELETE' });
+        if (!response.ok) throw new Error("Failed to delete session");
+        
+        if (activeSessionId === id) {
+            activeSessionId = null;
+        }
+        await loadSessions();
+    } catch (err) {
+        console.error("Delete session error:", err);
+    }
+}
+
+async function selectSession(id) {
+    activeSessionId = id;
+    document.getElementById('session-display').textContent = `Session ID: ${id.substring(0, 8)}`;
+    
+    // Highlight active sidebar item
+    const items = document.querySelectorAll('.session-item');
+    items.forEach(item => {
+        if (item.dataset.id === id) {
+            item.classList.add('active');
+        } else {
+            item.classList.remove('active');
+        }
+    });
+    
+    // Clear chat panes & sandboxes
+    chatMessages.innerHTML = '';
+    sandboxContent.innerHTML = '';
+    activeWidgets = 0;
+    widgetBadge.textContent = '0 Active Widgets';
+    if (emptyState) {
+        emptyState.style.display = 'flex';
+    }
+    
+    // Show default initial welcome
+    const welcome = document.createElement('div');
+    welcome.className = 'message system';
+    welcome.innerHTML = `
+        <div class="avatar">🤖</div>
+        <div class="content">
+            Welcome to the Circana Pilot multi-agent orchestrator. I can help coordinate your pricing analysis, cohort sizing, and campaign activations. Try asking:
+            <div class="suggestions">
+                <button onclick="suggest('Identify pricing opportunities with shopper attrition in the Soft Drinks category.')">🔍 Identify soft drink attrition opportunities</button>
+            </div>
+        </div>
+    `;
+    chatMessages.appendChild(welcome);
+    
+    try {
+        const response = await fetch(`/api/sessions/${id}`);
+        if (!response.ok) throw new Error("Failed to load history");
+        const history = await response.json();
+        
+        if (history.length > 0) {
+            chatMessages.innerHTML = ''; // wipe welcome message
+            history.forEach(item => {
+                // If it is a tech/action log like "Clicked action: ...", we can render it as system status or skip
+                // Let's render as chat messages
+                const role = item.role === 'model' || item.role === 'assistant' ? 'agent' : 'user';
+                appendMessage(role, item.text);
+                
+                if (item.widgets && item.widgets.length > 0) {
+                    item.widgets.forEach(renderA2UIWidget);
+                }
+            });
+        }
+    } catch (err) {
+        console.error("Load history error:", err);
+        appendMessage('system', `Error loading session history: ${err.message}`);
+    }
+}
+
 // User text query input submission
 async function submitUserMessage(message) {
-    if (!message.trim()) return;
+    if (!message.trim() || !activeSessionId) return;
     
     appendMessage('user', message);
     userInput.value = '';
@@ -128,7 +279,6 @@ async function submitUserMessage(message) {
     btnSend.disabled = true;
     setIndicator('supervisor');
     
-    // Guess sub-agent route to light up indicators during latency!
     const msgLower = message.toLowerCase();
     if (msgLower.includes('pricing') || msgLower.includes('attrition') || msgLower.includes('soft drinks')) {
         setIndicator('pricing');
@@ -140,7 +290,7 @@ async function submitUserMessage(message) {
         const response = await fetch('/api/chat', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ message: message, session_id: sessionId })
+            body: JSON.stringify({ message: message, session_id: activeSessionId })
         });
         
         if (!response.ok) {
@@ -169,10 +319,11 @@ async function submitUserMessage(message) {
 
 // Interactive callback payload submission
 async function submitInteractiveAction(action) {
+    if (!activeSessionId) return;
+    
     let turnDescription = `User Action: ${action.actionId}`;
     let userPromptText = "";
     
-    // Translate action payloads into a user-friendly conversational bubble
     if (action.actionId === 'product_selected') {
         userPromptText = `Selected product: "${action.payload.product}". Sizing the cohort...`;
         setIndicator('activate');
@@ -189,7 +340,6 @@ async function submitInteractiveAction(action) {
     
     appendMessage('user', userPromptText);
     
-    // Disable inputs
     userInput.disabled = true;
     btnSend.disabled = true;
     
@@ -197,7 +347,7 @@ async function submitInteractiveAction(action) {
         const response = await fetch('/api/action', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: action, session_id: sessionId })
+            body: JSON.stringify({ action: action, session_id: activeSessionId })
         });
         
         if (!response.ok) {
@@ -223,9 +373,8 @@ async function submitInteractiveAction(action) {
     }
 }
 
-// Listen for messages from within the rendered iFrames
+// Listen for iframe callbacks
 window.addEventListener('message', (event) => {
-    // Only accept messages that are of USER_ACTION type
     if (event.data && event.data.type === 'USER_ACTION') {
         console.log("Captured USER_ACTION callback from widget:", event.data);
         submitInteractiveAction(event.data);
@@ -240,8 +389,13 @@ userInput.addEventListener('keydown', (e) => {
     }
 });
 
+btnNewChat.addEventListener('click', createNewSession);
+
 // Suggestions shortcut
 window.suggest = function(text) {
     userInput.value = text;
     submitUserMessage(text);
 };
+
+// Initial Load
+loadSessions();
