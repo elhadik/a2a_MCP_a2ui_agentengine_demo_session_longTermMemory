@@ -19,3 +19,7 @@ scratch/
 # OS-specific
 .DS_Store
 Thumbs.db
+
+# Private client documents
+architecture/
+
