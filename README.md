@@ -258,6 +258,16 @@ This state machine is enforced programmatically in the Supervisor's system instr
 2. **Context Passing (A2A)**: The root node passes parameters (such as the target cohort product or activation partners) down to the leaf nodes using structured A2A data slots, avoiding unstructured instruction drift.
 3. **Execution Thread Locking**: The supervisor is instructed to halt execution and return control to the portal after completing each phase's A2UI component rendering, waiting for explicit user interaction before transitioning to the next phase.
 
+#### 3. Dynamic Hybrid Routing vs. get_remote_a2a_agent
+While standard Gemini Enterprise Agent Registry console examples recommend abstracting remote nodes using:
+```python
+remote_agent = registry.get_remote_a2a_agent(AGENT_NAME)
+sub_agents=[remote_agent]
+```
+we programmatically route sub-agent communications through a custom `send_message_tool` tool instead. This dynamic approach guarantees:
+* **Local Emulation Support**: When developing/testing locally, the supervisor routes requests to local mock ports (e.g. `http://localhost:8001`), whereas `get_remote_a2a_agent` would always force routing to cloud deployments.
+* **Identity Header Propagation**: We can inject user Microsoft Entra ID context dynamically in A2A request headers per turn.
+
 ---
 
 ### C. Human-in-the-Loop (HITL) State Suspension & A2UI widgets
