@@ -82,7 +82,7 @@ The architecture is built on the enterprise-grade capabilities of the **Google C
 ### Step A: Identify Pricing Opportunities
 The supervisor delegates the initial query to the **Pricing Agent**, which queries historical store attrition data and projects an interactive product selection table into the browser canvas:
 
-![Initial Product Select Table](static/web_pricing_table.png)
+![Initial Product Select Table](architecture/screenshots/web_pricing_table.png)
 
 ---
 
@@ -96,7 +96,7 @@ Clicking **Select Cohort** on the widget triggers a Human-in-the-Loop callback. 
 ### Step C: Export Sync Confirmation
 Upon selecting the channels (LiveRamp, Google Customer Match) and clicking **Activate**, the agent runs the export tool and writes success events back to the session logger:
 
-![Sync Confirmation Success](static/web_final_success.png)
+![Sync Confirmation Success](architecture/screenshots/web_final_success.png)
 
 ---
 
