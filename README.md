@@ -197,6 +197,8 @@ sequenceDiagram
     *   **Loyalty Engine:** `projects/943928157761/locations/us-central1/reasoningEngines/7172728425226960896`
 *   **Official Citation:**
     > *"Gemini Enterprise Agent Engine lets you deploy python-based orchestration frameworks (such as LangChain or custom agent models) to Google Cloud as fully-managed endpoints."* — [Google Cloud Gemini Enterprise Agent Engine Guide](https://cloud.google.com/vertex-ai/generative-ai/docs/reasoning-engine/overview)
+*   **Live Proof-of-Deployment (Agent Engine Endpoints):**
+    ![GCP Agent Engine Registered Endpoints](architecture/screenshots/agent_engine_registered.png)
 
 ---
 
