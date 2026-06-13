@@ -1,0 +1,153 @@
+# Prevent requests/urllib3 from using pyOpenSSL to avoid Python 3.13 context mutation bugs
+try:
+    import urllib3.contrib.pyopenssl
+    urllib3.contrib.pyopenssl.inject_into_urllib3 = lambda: None
+    urllib3.contrib.pyopenssl.extract_from_urllib3 = lambda: None
+except ImportError:
+    pass
+
+import os
+os.environ["GOOGLE_API_USE_CLIENT_CERTIFICATE"] = "false"
+
+import sys
+import vertexai
+from dotenv import load_dotenv
+from google.auth import default
+from google.auth.transport.requests import Request
+from google.genai import types
+from vertexai.preview.reasoning_engines import A2aAgent
+
+# Load dot env from parent directory
+load_dotenv("../.env")
+
+# Add current directory to python path
+sys.path.insert(0, ".")
+
+def main():
+    project_id = os.environ.get("PROJECT_ID")
+    location = os.environ.get("LOCATION", "us-central1")
+    storage = os.environ.get("STORAGE_BUCKET")
+    api_endpoint = f"{location}-aiplatform.googleapis.com"
+
+    if not project_id or not storage:
+        print("Error: PROJECT_ID and STORAGE_BUCKET environment variables must be set.")
+        return
+
+    print("=" * 80)
+    print(f"Starting deployment to project: {project_id} | location: {location}")
+    print("=" * 80)
+
+    vertexai.init(
+        project=project_id,
+        location=location,
+        api_endpoint=api_endpoint,
+        staging_bucket=storage,
+    )
+    print("✓ Vertex AI initialized.")
+
+    client = vertexai.Client(
+        project=project_id,
+        location=location,
+        http_options=types.HttpOptions(api_version="v1beta1")
+    )
+    print("✓ Vertex AI client created.")
+
+    # Requirements for Reasoning Engine container
+    requirements = [
+        "google-cloud-aiplatform[agent_engines,adk]==1.148.0",
+        "google-genai==1.73.1",
+        "python-dotenv==1.2.2",
+        "a2a-sdk==0.3.26",
+        "cloudpickle==3.1.2",
+        "pydantic==2.13.1",
+        "a2ui-agent-sdk==0.2.1",
+        "fastapi==0.136.0",
+        "google-cloud-storage",
+    ]
+
+    # Package folder relative to CWD (agents/)
+    extra_packages = ["circana_pilot_agent"]
+
+    # Sub-agent deployment specs
+    from circana_pilot_agent.sub_agents.pricing_assortment_orchestrator import get_agent_card as get_pricing_card
+    from circana_pilot_agent.sub_agents.liquid_activate_orchestrator import get_agent_card as get_activate_card
+    from circana_pilot_agent.sub_agents.loyalty_campaign_orchestrator import get_agent_card as get_loyalty_card
+
+    from circana_pilot_agent.sub_agents_executors import PricingAssortmentExecutor, LiquidActivateExecutor, LoyaltyCampaignExecutor
+
+    deployments = [
+        {
+            "key": "PricingAssortmentOrchestrator",
+            "display_name": "pricing_assortment_orchestrator",
+            "executor": PricingAssortmentExecutor,
+            "card_fn": get_pricing_card,
+            "description": "Specialist orchestrator analyzing pricing changes and buyer attrition."
+        },
+        {
+            "key": "LiquidActivateOrchestrator",
+            "display_name": "liquid_activate_orchestrator",
+            "executor": LiquidActivateExecutor,
+            "card_fn": get_activate_card,
+            "description": "Specialist orchestrator handling segment sizing and activate channel mappings."
+        },
+        {
+            "key": "LoyaltyCampaignOrchestrator",
+            "display_name": "loyalty_campaign_orchestrator",
+            "executor": LoyaltyCampaignExecutor,
+            "card_fn": get_loyalty_card,
+            "description": "Specialist orchestrator executing personalized loyalty campaigns."
+        }
+    ]
+
+    deployed_endpoints = {}
+
+    for dep in deployments:
+        print(f"\n🚀 Deploying sub-agent: {dep['key']}...")
+        
+        # Create standard card wrapper
+        card = dep['card_fn'](host="localhost", port=80)
+        
+        a2ui_agent = A2aAgent(
+            agent_card=card,
+            agent_executor_builder=dep['executor']
+        )
+        
+        config = {
+            "display_name": dep['display_name'],
+            "description": dep['description'],
+            "agent_framework": "google-adk",
+            "staging_bucket": storage,
+            "gcs_dir_name": dep['display_name'],
+            "requirements": requirements,
+            "extra_packages": extra_packages,
+            "env_vars": {
+                "NUM_WORKERS": "1",
+                "GOOGLE_GENAI_USE_VERTEXAI": "true",
+                "PROJECT_ID": project_id,
+                "LOCATION": location,
+                "GOOGLE_CLOUD_LOCATION": location,
+            }
+        }
+        
+        try:
+            remote_agent = client.agent_engines.create(agent=a2ui_agent, config=config)
+            resource_name = remote_agent.api_resource.name
+            endpoint_url = f"https://{api_endpoint}/v1beta1/{resource_name}"
+            
+            print(f"✓ Deployed successfully! Resource name: {resource_name}")
+            print(f"✓ Endpoint URL: {endpoint_url}")
+            deployed_endpoints[dep['key']] = endpoint_url
+        except Exception as ex:
+            print(f"✗ Deployment failed for {dep['key']}: {ex}")
+            import traceback
+            traceback.print_exc()
+
+    print("\n" + "=" * 80)
+    print("ALL SUB-AGENTS DEPLOYED SUCCESSFULLY!")
+    print("=" * 80)
+    for k, v in deployed_endpoints.items():
+        print(f"'{k}': '{v}',")
+    print("=" * 80)
+
+if __name__ == "__main__":
+    main()
