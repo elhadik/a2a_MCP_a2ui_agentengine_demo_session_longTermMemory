@@ -93,11 +93,25 @@ async def run_executor_turn(session_id: str, prompt_part: Part) -> Dict[str, Any
     async for ev in consumer.consume_all():
         if ev.status and ev.status.state == 'completed' and ev.status.message:
             for part in ev.status.message.parts:
-                if hasattr(part.root, 'text') and part.root.text:
-                    text_response += part.root.text + "\n"
-                elif hasattr(part.root, 'data') and part.root.data:
-                    a2ui_widgets.append(part.root.data)
-                    
+                if hasattr(part, 'root'):
+                    root_val = part.root
+                    if hasattr(root_val, 'text') and root_val.text:
+                        text_response += root_val.text + "\n"
+                    elif hasattr(root_val, 'data') and root_val.data:
+                        a2ui_widgets.append(root_val.data)
+                elif isinstance(part, dict):
+                    if "text" in part:
+                        text_response += part["text"] + "\n"
+                    elif "data" in part:
+                        a2ui_widgets.append(part["data"])
+                    elif "root" in part:
+                        root_part = part["root"]
+                        if isinstance(root_part, dict):
+                            if "text" in root_part:
+                                text_response += root_part["text"] + "\n"
+                            elif "data" in root_part:
+                                a2ui_widgets.append(root_part["data"])
+                        
     return {
         "text": text_response.strip(),
         "widgets": a2ui_widgets
@@ -107,6 +121,15 @@ async def run_executor_turn(session_id: str, prompt_part: Part) -> Dict[str, Any
 async def list_sessions():
     try:
         logger.info(f"Listing sessions for agent: {agent_url}")
+        if not agent_url or "projects/" not in agent_url:
+            return [
+                {
+                    "id": "local-session-1234",
+                    "name": f"{agent_url}/sessions/local-session-1234",
+                    "create_time": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+                    "user_id": "user"
+                }
+            ]
         sessions_page = genai_client.agent_engines.sessions.list(name=agent_url)
         sessions_list = []
         for s in sessions_page:
@@ -128,6 +151,13 @@ async def list_sessions():
 async def create_session():
     try:
         logger.info(f"Creating session for agent: {agent_url}")
+        if not agent_url or "projects/" not in agent_url:
+            session_id = f"local-session-{str(uuid.uuid4())[:8]}"
+            return {
+                "id": session_id,
+                "name": f"{agent_url}/sessions/{session_id}",
+                "create_time": datetime.datetime.now(datetime.timezone.utc).isoformat()
+            }
         operation = genai_client.agent_engines.sessions.create(
             name=agent_url,
             user_id="user"
@@ -146,6 +176,8 @@ async def create_session():
 @app.get("/api/sessions/{session_id}")
 async def get_session_history(session_id: str):
     try:
+        if not agent_url or "projects/" not in agent_url:
+            return []
         session_name = f"{agent_url}/sessions/{session_id}"
         logger.info(f"Fetching history events for session: {session_name}")
         events = genai_client.agent_engines.sessions.events.list(name=session_name)
@@ -178,6 +210,8 @@ async def get_session_history(session_id: str):
 @app.delete("/api/sessions/{session_id}")
 async def delete_session(session_id: str):
     try:
+        if not agent_url or "projects/" not in agent_url:
+            return {"status": "deleted"}
         session_name = f"{agent_url}/sessions/{session_id}"
         logger.info(f"Deleting session: {session_name}")
         genai_client.agent_engines.sessions.delete(name=session_name)
@@ -190,6 +224,9 @@ async def delete_session(session_id: str):
 async def chat_endpoint(req: ChatRequest):
     try:
         logger.info(f"Received chat request for session {req.session_id}: {req.message}")
+        if not agent_url or "projects/" not in agent_url:
+            result = await run_executor_turn(req.session_id, Part(root=TextPart(text=req.message)))
+            return result
         session_name = f"{agent_url}/sessions/{req.session_id}"
         
         # 1. Append User Event
@@ -242,6 +279,9 @@ async def chat_endpoint(req: ChatRequest):
 async def action_endpoint(req: ActionRequest):
     try:
         logger.info(f"Received action request for session {req.session_id}: {req.action}")
+        if not agent_url or "projects/" not in agent_url:
+            result = await run_executor_turn(req.session_id, Part(root=DataPart(data=req.action)))
+            return result
         session_name = f"{agent_url}/sessions/{req.session_id}"
         
         # 1. Append Action click User Event

@@ -9,7 +9,9 @@ except (ImportError, ValueError):
 
 ROLE_DESCRIPTION = (
     "You are the Circana Size Agent. Your job is to size the cohort across channels. "
-    "Call size_audience_tool to compile reach metrics and return the result."
+    "Call size_audience_tool to compile reach metrics and return the result. "
+    "CRITICAL: You MUST output the exact <a2ui-json> block returned by the tool verbatim at the end of your response. "
+    "Do not modify or omit the XML tags or JSON content."
 )
 
 size_agent = Agent(

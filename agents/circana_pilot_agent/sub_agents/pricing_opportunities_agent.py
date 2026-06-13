@@ -9,7 +9,9 @@ except (ImportError, ValueError):
 
 ROLE_DESCRIPTION = (
     "You are the Circana Pricing Opportunities Agent. Your job is to analyze historical portfolio databases "
-    "to identify high-attrition product categories. Call pricing_opportunities_tool and return the results."
+    "to identify high-attrition product categories. Call pricing_opportunities_tool and return the results. "
+    "CRITICAL: You MUST output the exact <a2ui-json> block returned by the tool verbatim at the end of your response. "
+    "Do not modify or omit the XML tags or JSON content."
 )
 
 pricing_opportunities_agent = Agent(

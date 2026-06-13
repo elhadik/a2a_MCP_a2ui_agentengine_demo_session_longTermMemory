@@ -1,4 +1,4 @@
-# Retail Multi-Agent Orchestration Hub & GCP Agent Platform Integration
+# Retail Multi-Agent Orchestration Hub & Gemini Enterprise Agent Engine Integration
 
 The **Retail Multi-Agent Orchestration Hub** is a premium, state-of-the-art pilot portal demonstrating a conversational AI interface coupled with an interactive sandbox canvas. The system coordinates retail pricing analytics, cohort construction, audience sizing, and marketing activations across a hybrid multi-agent network.
 
@@ -14,7 +14,7 @@ Explore the E2E user flow of the Multi-Agent Portal, showing session initializat
 
 ## 1. System Architecture & Topology
 
-The application is built on the **Google Cloud Agent Platform**, implementing a secure, stateful multi-agent hierarchy governed by Model Armor and integrated with custom tools via the Model Context Protocol (MCP):
+The application is built on the **Gemini Enterprise Agent Engine**, implementing a secure, stateful multi-agent hierarchy governed by Model Armor and integrated with custom tools via the Model Context Protocol (MCP):
 
 ```mermaid
 graph TD
@@ -23,13 +23,13 @@ graph TD
         PortalDB[(Local HTTP Session Store)] <--> Portal
     end
 
-    subgraph GCP Agent Platform [GCP Vertex AI Security & Runtime Zone]
+    subgraph GCP Agent Platform [Gemini Enterprise Agent Engine Zone]
         direction TB
         subgraph Security Gate [GCP Safety Filter]
             ModelArmor{Model Armor Safety Shield}
         end
         
-        subgraph Runtime [Vertex AI Agent Engine]
+        subgraph Runtime [Gemini Enterprise Agent Engine]
             direction TB
             Supervisor["Supervisor Agent (PilotSupervisor)"]
             
@@ -104,7 +104,7 @@ graph TD
 
 1.  **FastAPI Portal App & HTTP Sessions:** Manages local user sessions, authenticates identity against Google/Entra Identity Providers, and maintains conversation states locally before dispatching payloads downstream.
 2.  **Model Armor Safety Shield:** Acts as an inline firewall for the LLM. Every user prompt is scanned for prompt injection, hate speech, and jailbreak vectors. Every agent output is scanned to redact sensitive PII (Social Security or Credit Card numbers).
-3.  **Vertex AI Agent Engine (Reasoning Engine):** Google Cloud's serverless container runtime that packages python-based agent orchestration frameworks and executes them securely under IAM policies.
+3.  **Gemini Enterprise Agent Engine:** Google Cloud's serverless container runtime that packages python-based agent orchestration frameworks and executes them securely under IAM policies.
 4.  **Agent & MCP Registry:** Centralized registries that host global metadata configurations. The **Agent Registry** catalog allows the Supervisor to discover sub-agent microservice endpoints, and the **MCP Registry** publishes the schemas of tools hosted on external MCP servers.
 5.  **A2A (Agent-to-Agent) Protocol:** Structured JSON message schema that allows the Supervisor to pass structured tasks and raw parameter definitions to sub-agents (and vice-versa) using A2A `DataPart` slots instead of raw unstructured text.
 6.  **A2UI (Agent-to-User-Interface) Protocol:** Formats widget schemas (`<a2ui-json>`) returned by agents. The Supervisor intercepts these declarations and expands them into premium HTML widget sandboxes before streaming them to the client console.
@@ -171,7 +171,7 @@ sequenceDiagram
 
 ---
 
-## 3. GCP Agent Platform Component References & Citations
+## 3. Gemini Enterprise Agent Engine Component References & Citations
 
 ### 🛡️ Model Armor
 *   **Definition:** A managed safety service designed to serve as a guardrail wrapper around LLM prompts and responses. It screens input strings for prompt injection, jailbreak attempts, and toxic content, and redacts sensitive Personally Identifiable Information (PII) before it reaches the model.
@@ -182,21 +182,21 @@ sequenceDiagram
     ![Model Armor Blocked Prompt](architecture/screenshots/model_armor_prompt_block.png)
 
 ### 🗃️ Agent Registry & MCP tool registry
-*   **Definition:** The centralized catalog in GCP Agent Platform where custom tools, endpoints, and Model Context Protocol (MCP) servers are registered, authorized, and made discoverable.
+*   **Definition:** The centralized catalog in Gemini Enterprise Agent Engine where custom tools, endpoints, and Model Context Protocol (MCP) servers are registered, authorized, and made discoverable.
 *   **System Integration:** The `circana-mcp-server` is registered under the global Agent Registry services with protocol bindings for `JSONRPC` over HTTP/SSE, publishing our custom cohort building tools.
 *   **Official Citation:**
     > *"Agent Registry provides a unified catalog to discover, govern, and reuse tools, APIs, and Model Context Protocol servers across your enterprise AI applications."* — [Google Cloud Agent Platform Registry Documentation](https://cloud.google.com/vertex-ai/generative-ai/docs/agent-registry)
 *   **Live Proof-of-Registration (MCP Registry):**
     ![GCP MCP Server Registration](architecture/screenshots/gcp_mcp_server_registered.png)
 
-### ⚙️ Vertex AI Agent Engine (Reasoning Engine)
+### ⚙️ Gemini Enterprise Agent Engine
 *   **Definition:** A managed runtime environment that packages Python code, dependencies, and parameters into a serialized execution graph (via Cloudpickle) and deploys it as an API endpoint.
-*   **System Integration:** All three Circana sub-agents are deployed as Cloud Reasoning Engines under Python 3.13 containers:
+*   **System Integration:** All three Circana sub-agents are deployed as Cloud Agent Engine endpoints under Python 3.13 containers:
     *   **Pricing Engine:** `projects/943928157761/locations/us-central1/reasoningEngines/3371690339726262272`
     *   **Activate Engine:** `projects/943928157761/locations/us-central1/reasoningEngines/1265131614023712768`
     *   **Loyalty Engine:** `projects/943928157761/locations/us-central1/reasoningEngines/7172728425226960896`
 *   **Official Citation:**
-    > *"Vertex AI Reasoning Engine lets you deploy python-based orchestration frameworks (such as LangChain or custom agent models) to Google Cloud as fully-managed endpoints."* — [Google Cloud Vertex AI Reasoning Engine Guide](https://cloud.google.com/vertex-ai/generative-ai/docs/reasoning-engine/overview)
+    > *"Gemini Enterprise Agent Engine lets you deploy python-based orchestration frameworks (such as LangChain or custom agent models) to Google Cloud as fully-managed endpoints."* — [Google Cloud Gemini Enterprise Agent Engine Guide](https://cloud.google.com/vertex-ai/generative-ai/docs/reasoning-engine/overview)
 
 ---
 
@@ -223,7 +223,50 @@ Upon selecting the channels (LiveRamp, Google Customer Match) and clicking **Act
 
 ---
 
-## 5. Local Web App Setup & Execution
+## 5. Advanced Cloud Platform Integration Details
+
+### A. MCP Cloud Run Deployment & Agent Registry Integration
+The Circana Model Context Protocol (MCP) server is compiled as a Docker container (refer to [Dockerfile](file:///usr/local/google/home/elhadik/Circana_POC/Dockerfile)) running FastAPI in HTTP mode. The container is deployed to Google Cloud Run with access control secured by default (`--no-allow-unauthenticated`). 
+
+To orchestrate tool calling securely, we utilize the **Gemini Enterprise Agent Engine Registry** client. During agent initialization, the agent dynamically fetches the registered tool descriptions and connection endpoints:
+```python
+from google.adk.integrations.agent_registry import AgentRegistry
+
+registry = AgentRegistry(project_id=PROJECT_ID, location="global")
+mcp_toolset = registry.get_mcp_toolset(MCP_SERVER_RESOURCE_NAME)
+```
+The ADK library automatically resolves the JSON-RPC SSE/Streamable HTTP bindings, manages connection pooling, and handles OIDC identity token generation for Cloud Run secure request routing via a custom `header_provider`.
+
+---
+
+### B. Gemini Enterprise Agent Engine & Graph Orchestration
+We leverage the **Google GenAI ADK 2** framework to build our multi-agent graph. The system consists of a centralized supervisor (`SupervisorAgent`) that orchestrates pricing assortment and activations by delegating tasks to sub-agents. 
+
+Unlike traditional unstructured text chains, our orchestration model represents a deterministic state-machine graph:
+1. The **Supervisor** maps state variables and coordinates user-triggered transitions.
+2. The sub-agents (e.g. `AudienceSizeAgent`) are declared as nodes in the graph with private routing boundaries.
+3. State data (such as target products, audience metrics, and selected partners) is shared across execution sessions securely via the `InMemorySessionService`.
+
+---
+
+### C. Human-in-the-Loop (HITL) State Suspension & A2UI widgets
+To provide a seamless marketer console experience, we implement **Human-in-the-Loop (HITL)** verification intervals:
+1. **Suspension**: When the Pricing Agent identifies cohort opportunities, it compiles a structured component schema and halts execution, outputting a custom `<a2ui-json>` block.
+2. **Resumption**: The frontend portal captures the `<a2ui-json>` block, renders an interactive HTML widget (pricing tables or sizing charts), and holds context. Once the user clicks "Select Cohort" or "Activate", the portal POSTs a resume callback request containing the action ID and payload variables back to the `SupervisorAgent`, resuming the execution graph.
+
+---
+
+### D. GCP Cloud Logging & Security Auditing
+All session telemetries, tool executions, and safety screenings are logged natively to **GCP Cloud Logging**:
+* **Execution Telemetry**: Trace IDs are propagated across the A2A network, matching Supervisor delegation steps with Cloud Run MCP container requests.
+* **Cost Auditing**: Token consumption details and model latency are written per turn for exact cost computation.
+* **Audit Traces**: Cloud Run request logs monitor endpoint access, rejecting unauthenticated requests automatically.
+
+![GCP Cloud Run Request Logs](architecture/screenshots/cloud_run_mcp_logs.png)
+
+---
+
+## 6. Local Web App Setup & Execution
 
 ### Prerequisites
 *   Python 3.13 Virtual Environment (`.venv`)
@@ -240,7 +283,7 @@ GOOGLE_GENAI_MODEL=gemini-2.5-flash
 # Cloud Run MCP Server Url
 MCP_SERVER_URL=https://circana-mcp-server-943928157761.us-central1.run.app
 
-# Deployed Cloud Reasoning Engine Resource IDs
+# Deployed Gemini Enterprise Agent Engine Resource IDs
 PRICING_AGENT_URL=projects/943928157761/locations/us-central1/reasoningEngines/3371690339726262272
 ACTIVATE_AGENT_URL=projects/943928157761/locations/us-central1/reasoningEngines/1265131614023712768
 LOYALTY_AGENT_URL=projects/943928157761/locations/us-central1/reasoningEngines/7172728425226960896

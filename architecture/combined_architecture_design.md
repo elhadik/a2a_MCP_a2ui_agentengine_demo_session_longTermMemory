@@ -73,7 +73,7 @@ To meet Circana's requirement of semantic reasoning, routing precision (decoy ag
 To satisfy Circana's target environment constraints, the multi-agent system runs across a hybrid infrastructure split between Google Cloud Platform and Circana's on-premises network:
 
 ### A. Runtime Distribution
-* **GCP Cloud-Native Runtime (Vertex AI Agent Engine)**:
+* **GCP Cloud-Native Runtime (Gemini Enterprise Agent Engine)**:
   - **Agents**: `SupervisorAgent` (Root), `PricingAssortmentOrchestrator`, `DecoyOrchestrators`.
   - **Rationale**: Needs low-latency access to the Gemini Enterprise A2A webhooks, the A2UI catalog renderers, and Google Cloud's safety/observability suites (Model Armor, Memory Bank).
 * **On-Premises Container Runtime (Circana Kubernetes Cluster)**:
@@ -95,11 +95,11 @@ To satisfy Circana's target environment constraints, the multi-agent system runs
 | Component | Platform Infrastructure | Description |
 | :--- | :--- | :--- |
 | **Chat Entry Point** | **Gemini Enterprise App** | The primary user chat console. Supports SSO (Microsoft Entra), custom agent selection ("From your organization" tab), and split-screen layouts. |
-| **Agent Runtime** | **Vertex AI Agent Engine** | Serverless Python container runtime. Hosts the ADK Supervisor and sub-agents, handling session context and execution. |
+| **Agent Runtime** | **Gemini Enterprise Agent Engine** | Serverless Python container runtime. Hosts the ADK Supervisor and sub-agents, handling session context and execution. |
 | **A2A / A2UI Wrapper** | **`a2a-sdk` Python Web Server** | Receives tasks, converts GenAI outputs (wrapped in `<a2ui-json>`) into rich component payloads, and forwards interactive UI events. |
 | **Short-Term Memory** | **ADK Session Service** | In-memory or Redis-backed session state capturing active user context across task-chaining steps. |
 | **Long-Term Memory** | **Agent Platform Memory Bank** (Primary) & **Vector DB / Spanner** | Native long-term memory repository (performing automatic LLM-based extraction and consolidation across sessions) combined with Spanner for domain ontology/grounding. |
-| **Private Connectivity** | **Private Service Connect (PSC)** | Secures communication between the GCP Vertex AI Agent Engine and the on-premise Circana network. A transit VM can act as an outbound reverse proxy. |
+| **Private Connectivity** | **Private Service Connect (PSC)** | Secures communication between the GCP Gemini Enterprise Agent Engine and the on-premise Circana network. A transit VM can act as an outbound reverse proxy. |
 | **Safety Shield** | **Model Armor** | Intercepts user prompts and agent outputs to redact PII, restrict sensitive information leakage, and enforce safety guidelines. |
 | **Logging & Cost Control** | **Cloud Logging & BigQuery** | Aggregates session telemetry, latency metrics, and API call costs per step for auditing. |
 
@@ -198,7 +198,7 @@ Circana_POC/
 ├── .env                       # Local development credentials
 ├── pyproject.toml             # Python packaging configuration
 ├── requirements.txt           # Declared container dependencies
-├── deploy.py                  # Script to package and deploy Reasoning Engine
+├── deploy.py                  # Script to package and deploy Gemini Enterprise Agent Engine
 ├── register.py                # Script to register agent card in Gemini Enterprise
 ├── agent.py                   # Root Bridge: imports agents.circana_pilot_agent.agent
 ├── executor.py                # Root Bridge: imports agents.circana_pilot_agent.executor
@@ -232,7 +232,7 @@ except ImportError:
 ### B. Python ADK (Recommended)
 * *Pros*: Native support for `A2uiSchemaManager`, precise routing configuration for decoy testing, and easy async MCP client wrappers.
 * *Cons*: Requires staging packaging templates.
-* **Recommendation**: Utilize the **Code-First Python ADK** approach on Vertex AI Agent Engine.
+* **Recommendation**: Utilize the **Code-First Python ADK** approach on Gemini Enterprise Agent Engine.
 
 ---
 

@@ -44,12 +44,26 @@ def handle_call_tool(name, arguments):
         clean_name = product_name.upper().replace(' ', '-').replace("'", "")
         aud_id = f"AUD-{clean_name}-999"
         
+        prod_lower = product_name.lower()
+        if "pepsi" in prod_lower:
+            shoppers = 350000
+        elif "doritos" in prod_lower:
+            shoppers = 280000
+        elif "tomato" in prod_lower:
+            shoppers = 410000
+        elif "oreo" in prod_lower:
+            shoppers = 190000
+        elif "tea" in prod_lower:
+            shoppers = 220000
+        else:
+            shoppers = 300000
+            
         result = {
             "status": "Created",
             "audience_id": aud_id,
             "product_name": product_name,
-            "shoppers_isolated": 350000,
-            "message": f"Successfully materialized cohort for {product_name} containing 350K historical shoppers."
+            "shoppers_isolated": shoppers,
+            "message": f"Successfully materialized cohort for {product_name} containing {shoppers:,} historical shoppers."
         }
         return {
             "content": [
@@ -63,14 +77,41 @@ def handle_call_tool(name, arguments):
         audience_id = arguments.get("audience_id", "AUD-DIET-PEPSI-999")
         partner_options = arguments.get("partner_options", "LiveRamp,Google")
         
-        # Sizing calculations
-        original_size = 350000
-        scaled_size = 1200000
-        reach_pct = 85.0
-        
+        aud_id_upper = audience_id.upper()
+        if "PEPSI" in aud_id_upper:
+            p_name = "Diet Pepsi 12pk"
+            original_size = 350000
+            scaled_size = 1200000
+            reach_pct = 85.0
+        elif "DORITOS" in aud_id_upper:
+            p_name = "Doritos Nacho Cheese 10oz"
+            original_size = 280000
+            scaled_size = 950000
+            reach_pct = 78.0
+        elif "TOMATO" in aud_id_upper:
+            p_name = "Campbell's Tomato Soup 10.75oz"
+            original_size = 410000
+            scaled_size = 1400000
+            reach_pct = 82.0
+        elif "OREO" in aud_id_upper:
+            p_name = "Oreo Double Stuf 15.35oz"
+            original_size = 190000
+            scaled_size = 650000
+            reach_pct = 72.0
+        elif "TEA" in aud_id_upper:
+            p_name = "Lipton Iced Tea 64oz"
+            original_size = 220000
+            scaled_size = 780000
+            reach_pct = 80.0
+        else:
+            p_name = "Selected Product"
+            original_size = 300000
+            scaled_size = 1000000
+            reach_pct = 80.0
+            
         result = {
             "audience_id": audience_id,
-            "product_name": "Diet Pepsi 12pk",
+            "product_name": p_name,
             "original_size": original_size,
             "scaled_size": scaled_size,
             "reach_percentage": reach_pct,
@@ -189,6 +230,48 @@ if __name__ == "__main__":
                         "message": str(e)
                     }
                 }
+
+        @app.post("/")
+        async def handle_jsonrpc(req: Request):
+            body = await req.json()
+            method = body.get("method")
+            req_id = body.get("id")
+            params = body.get("params", {})
+            
+            logger.info(f"HTTP JSONRPC: method={method} | params={params}")
+            
+            if method == "initialize":
+                result = {
+                    "protocolVersion": "2024-11-05",
+                    "capabilities": {
+                        "tools": {}
+                    },
+                    "serverInfo": {
+                        "name": "circana-mcp-server",
+                        "version": "1.0.0"
+                    }
+                }
+            elif method == "tools/list":
+                result = handle_list_tools()
+            elif method == "tools/call":
+                tool_name = params.get("name")
+                arguments = params.get("arguments", {})
+                result = handle_call_tool(tool_name, arguments)
+            else:
+                return {
+                    "jsonrpc": "2.0",
+                    "id": req_id,
+                    "error": {
+                        "code": -32601,
+                        "message": f"Method not found: {method}"
+                    }
+                }
+                
+            return {
+                "jsonrpc": "2.0",
+                "id": req_id,
+                "result": result
+            }
                 
         uvicorn.run(app, host=args.host, port=args.port)
     else:

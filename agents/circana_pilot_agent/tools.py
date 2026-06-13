@@ -45,6 +45,61 @@ import sys
 import os
 
 def call_mcp_tool(tool_name: str, arguments: dict) -> dict:
+    mcp_server_id = os.environ.get("MCP_SERVER_NAME")
+    if mcp_server_id:
+        import asyncio
+        from google.adk.integrations.agent_registry import AgentRegistry
+        from google.auth import default
+
+        logger.info(f"call_mcp_tool: Resolving MCP Server '{mcp_server_id}' from Agent Registry via get_mcp_toolset...")
+
+        def get_cloud_run_auth_headers(context) -> dict:
+            import google.auth
+            import google.auth.transport.requests
+            from google.oauth2 import id_token
+            
+            mcp_url = os.environ.get("MCP_SERVER_URL", "https://circana-mcp-server-943928157761.us-central1.run.app")
+            try:
+                creds, project = google.auth.default()
+                auth_req = google.auth.transport.requests.Request()
+                creds.refresh(auth_req)
+                token = id_token.fetch_id_token(auth_req, mcp_url)
+                return {"Authorization": f"Bearer {token}"}
+            except Exception as auth_err:
+                logger.warning(f"Could not automatically fetch Google ID token for remote auth: {auth_err}")
+                return {}
+
+        async def _async_call():
+            _, project_id = default()
+            LOCATION = "global"
+            
+            registry = AgentRegistry(
+                project_id=project_id, 
+                location=LOCATION,
+                header_provider=get_cloud_run_auth_headers
+            )
+            
+            mcp_toolset = registry.get_mcp_toolset(mcp_server_id)
+            
+            headers = get_cloud_run_auth_headers(None)
+            session = await mcp_toolset._mcp_session_manager.create_session(headers=headers)
+            
+            result = await session.call_tool(tool_name, arguments=arguments)
+            content_text = result.content[0].text
+            return json.loads(content_text)
+
+        try:
+            try:
+                loop = asyncio.get_event_loop()
+            except RuntimeError:
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+            
+            return loop.run_until_complete(_async_call())
+        except Exception as e:
+            logger.error(f"Failed to execute MCP tool call via AgentRegistry: {e}", exc_info=True)
+            logger.info("Falling back to legacy HTTP POST or local stdio subprocess mode...")
+
     mcp_url = os.environ.get("MCP_SERVER_URL")
     if mcp_url:
         import httpx
@@ -357,6 +412,15 @@ async def send_message_tool(agent_name: str, task_summary: str, tool_context: To
             elif agent_name == "AudienceSizeAgent":
                 from circana_pilot_agent.sub_agents.size_agent import size_agent
                 target_agent = size_agent
+            elif agent_name == "PricingAssortmentOrchestrator":
+                from circana_pilot_agent.sub_agents.pricing_assortment_orchestrator import pricing_assortment_orchestrator
+                target_agent = pricing_assortment_orchestrator
+            elif agent_name == "LiquidActivateOrchestrator":
+                from circana_pilot_agent.sub_agents.liquid_activate_orchestrator import liquid_activate_orchestrator
+                target_agent = liquid_activate_orchestrator
+            elif agent_name == "LoyaltyCampaignOrchestrator":
+                from circana_pilot_agent.sub_agents.loyalty_campaign_orchestrator import loyalty_campaign_orchestrator
+                target_agent = loyalty_campaign_orchestrator
             else:
                 return f"Error: Agent '{agent_name}' mock is not configured."
                 
@@ -408,7 +472,7 @@ async def send_message_tool(agent_name: str, task_summary: str, tool_context: To
 
         if "projects/" in url and "reasoningEngines/" in url:
             # Route via Google GenAI SDK Agent Engines client
-            logger.info(f"Routing delegation via GenAI SDK to Reasoning Engine: {url}")
+            logger.info(f"Routing delegation via GenAI SDK to Gemini Enterprise Agent Engine: {url}")
             genai_client = _get_genai_client()
             agent_engine = genai_client.agent_engines.get(name=url)
             
@@ -580,6 +644,8 @@ async def send_message_tool(agent_name: str, task_summary: str, tool_context: To
                         _MOCK_STATE["active_data_parts"].append(data_val)
                         
         if not text_parts:
+            if _MOCK_STATE.get("active_data_parts"):
+                return "Success: Downstream agent returned the interactive components."
             return "Error: Downstream agent completed successfully but returned no parts in history."
             
         return "\n".join(text_parts)

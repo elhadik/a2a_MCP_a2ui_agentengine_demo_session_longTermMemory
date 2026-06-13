@@ -42,7 +42,7 @@ graph TD
         A2UI[Interactive Side Panel Sandbox] <--> SV
     end
 
-    subgraph Cloud[GCP Vertex AI Agent Engine Runtime]
+    subgraph Cloud[Gemini Enterprise Agent Engine Runtime]
         SV <-->|A2A / GenAI SDK| Semantic[Semantic Layer Agent]
         SV <-->|A2A / GenAI SDK| Pricing[Price & Assortment Orchestrator]
         Pricing <-->|A2A| PricingTool[Pricing Opportunities Agent]

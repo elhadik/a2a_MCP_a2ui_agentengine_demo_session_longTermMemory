@@ -10,8 +10,8 @@ except (ImportError, ValueError):
 ROLE_DESCRIPTION = (
     "You are the Circana Pricing & Assortment Orchestrator. Your job is to identify and analyze "
     "portfolio pricing changes and customer loss. Delegate to 'PricingOpportunitiesAgent' using your "
-    "send_message_tool to search transaction records, and print the exact <a2ui-json> XML block "
-    "returned by the specialist agent verbatim at the end of your response."
+    "send_message_tool to search transaction records. CRITICAL: You MUST print the exact <a2ui-json> XML block "
+    "returned by the specialist agent verbatim at the end of your response under all circumstances. Do not omit the widget."
 )
 
 pricing_assortment_orchestrator = Agent(
