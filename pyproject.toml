@@ -1,5 +1,5 @@
 [project]
-name = "circana-pilot-agent"
+name = "retail-pilot-agent"
 version = "0.1.0"
 dependencies = [
     "google-cloud-aiplatform[agent_engines,adk]==1.148.0",

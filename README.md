@@ -1,6 +1,6 @@
-# Circana Multi-Agent Orchestration Hub
+# Retail Multi-Agent Orchestration Hub
 
-The **Circana Multi-Agent Orchestration Hub** is a premium, state-of-the-art pilot portal demonstrating a conversational AI interface coupled with an interactive sandbox canvas. The system coordinates pricing analytics, cohort construction, audience sizing, and marketing activations across a hybrid multi-agent network.
+The **Retail Multi-Agent Orchestration Hub** is a premium, state-of-the-art pilot portal demonstrating a conversational AI interface coupled with an interactive sandbox canvas. The system coordinates pricing analytics, cohort construction, audience sizing, and marketing activations across a hybrid multi-agent network.
 
 ---
 
@@ -11,7 +11,7 @@ The portal is built on a **Supervisor-Orchestrator** model consisting of a centr
 ![System Architecture](static/topology_diagram.png)
 
 ### Core Components
-1. **Supervisor (CircanaPilotSupervisor):** Runs inside the local FastAPI backend. It serves as the primary conversational dispatcher, translating user intents into orchestration tasks and executing UI callbacks.
+1. **Supervisor (PilotSupervisor):** Runs inside the local FastAPI backend. It serves as the primary conversational dispatcher, translating user intents into orchestration tasks and executing UI callbacks.
 2. **Pricing Agent (PricingAssortmentOrchestrator):** Analyzes retail product catalog sales volume changes and buyer attrition to identify pricing opportunities.
 3. **Activation Agent (LiquidActivateOrchestrator):** Constructs, scales, and sizes custom audience segments (e.g., lapsed buyers of Diet Pepsi), and handles activation exports to marketing partners.
 4. **Loyalty Agent (LoyaltyCampaignOrchestrator):** Designs and creates personalized loyalty card campaign offers for target shopper cohorts.
