@@ -8,17 +8,7 @@ The **Circana Multi-Agent Orchestration Hub** is a premium, state-of-the-art pil
 
 The portal is built on a **Supervisor-Orchestrator** model consisting of a central web application layer directing tasks to specialized agent microservices:
 
-```mermaid
-graph TD
-    User([User Portal Frontend]) <--> WebServer[FastAPI Web Server]
-    WebServer <--> Supervisor[CircanaPilotSupervisor Agent]
-    
-    subgraph Vertex AI Reasoning Engine (Cloud)
-        Supervisor <-->|A2A / GenAI SDK| Pricing[PricingAssortmentOrchestrator]
-        Supervisor <-->|A2A / GenAI SDK| Activation[LiquidActivateOrchestrator]
-        Supervisor <-->|A2A / GenAI SDK| Loyalty[LoyaltyCampaignOrchestrator]
-    end
-```
+![System Architecture](static/topology_diagram.png)
 
 ### Core Components
 1. **Supervisor (CircanaPilotSupervisor):** Runs inside the local FastAPI backend. It serves as the primary conversational dispatcher, translating user intents into orchestration tasks and executing UI callbacks.
@@ -36,6 +26,8 @@ The application relies on two key architectural specifications from the **Agent 
 Conversations across different agents are structured using the standard A2A message formatting. Communication between the supervisor and sub-agents happens via:
 *   **GenAI SDK Reasoning Engine Client:** Resolves the Remote Reasoning Engine in the cloud and executes the task.
 *   **Simplified JSON Payload:** Sub-agents return data packages natively inside A2A `DataPart` structures rather than raw text, keeping LLM communication clean and structured.
+
+![A2A Sequence Flow](static/sequence_diagram.png)
 
 ### A2UI (Agent-to-User-Interface) Protocol
 To enable interactive widgets (tables, check-boxes, and buttons) inside the portal, the system utilizes the **A2UI Protocol**:
