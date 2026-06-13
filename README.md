@@ -109,6 +109,8 @@ graph TD
 5.  **A2A (Agent-to-Agent) Protocol:** Structured JSON message schema that allows the Supervisor to pass structured tasks and raw parameter definitions to sub-agents (and vice-versa) using A2A `DataPart` slots instead of raw unstructured text.
 6.  **A2UI (Agent-to-User-Interface) Protocol:** Formats widget schemas (`<a2ui-json>`) returned by agents. The Supervisor intercepts these declarations and expands them into premium HTML widget sandboxes before streaming them to the client console.
 7.  **Circana MCP Server on Cloud Run:** Host service built to run the Model Context Protocol in the cloud. It wraps our custom Audience Builder database APIs into standard MCP JSON-RPC schemas and exposes them safely via HTTPS.
+8.  **Sessions & Memory Bank:** Manages session state preservation across chat turns. Integrates short-term session memory for conversation context with the **Gemini Enterprise Memory Bank** to extract and recall long-term user preferences and campaign history across browser reloads.
+9.  **Agent Observability & Cloud Logging:** Emits execution telemetry, network latency, token consumption, and safety violations directly to **GCP Cloud Logging** to enable full tracing of A2A calls and tool usage per transaction step.
 
 ---
 
