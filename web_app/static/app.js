@@ -192,7 +192,6 @@ async function createNewSession() {
 }
 
 async function deleteSession(id) {
-    if (!confirm("Are you sure you want to delete this conversation?")) return;
     try {
         const response = await fetch(`/api/sessions/${id}`, { method: 'DELETE' });
         if (!response.ok) throw new Error("Failed to delete session");
