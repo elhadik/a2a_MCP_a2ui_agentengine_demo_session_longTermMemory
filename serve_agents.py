@@ -9,10 +9,12 @@ sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "agents")))
 
 # Set environment keys to mock staging configs
-os.environ["PROJECT_ID"] = os.environ.get("PROJECT_ID", "shade-sandbox")
-os.environ["LOCATION"] = os.environ.get("LOCATION", "us-central1")
-os.environ["GOOGLE_CLOUD_PROJECT"] = os.environ.get("PROJECT_ID", "shade-sandbox")
-os.environ["GOOGLE_CLOUD_LOCATION"] = os.environ.get("LOCATION", "us-central1")
+project_id = os.environ.get("GOOGLE_CLOUD_PROJECT", os.environ.get("PROJECT_ID", "shade-sandbox"))
+location = os.environ.get("GOOGLE_CLOUD_LOCATION", os.environ.get("LOCATION", "us-central1"))
+os.environ["PROJECT_ID"] = project_id
+os.environ["GOOGLE_CLOUD_PROJECT"] = project_id
+os.environ["LOCATION"] = location
+os.environ["GOOGLE_CLOUD_LOCATION"] = location
 
 from circana_pilot_agent.sub_agents.pricing_assortment_orchestrator import get_agent_card as get_pricing_card
 from circana_pilot_agent.sub_agents.liquid_activate_orchestrator import get_agent_card as get_activate_card

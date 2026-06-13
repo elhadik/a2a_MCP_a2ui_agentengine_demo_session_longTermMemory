@@ -238,7 +238,7 @@ To orchestrate tool calling securely, we utilize the **Gemini Enterprise Agent E
 ```python
 from google.adk.integrations.agent_registry import AgentRegistry
 
-registry = AgentRegistry(project_id=PROJECT_ID, location="global")
+registry = AgentRegistry(project_id=GOOGLE_CLOUD_PROJECT, location="global")
 mcp_toolset = registry.get_mcp_toolset(MCP_SERVER_RESOURCE_NAME)
 ```
 The ADK library automatically resolves the JSON-RPC SSE/Streamable HTTP bindings, manages connection pooling, and handles OIDC identity token generation for Cloud Run secure request routing via a custom `header_provider`.

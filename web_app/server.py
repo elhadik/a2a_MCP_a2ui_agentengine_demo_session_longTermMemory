@@ -36,8 +36,8 @@ logger = logging.getLogger("web_app_server")
 app = FastAPI(title="Circana Orchestrator Local Test Platform")
 
 # Initialize Vertex AI & GenAI Client
-project_id = os.environ.get("PROJECT_ID", "shade-sandbox")
-location = os.environ.get("LOCATION", "us-central1")
+project_id = os.environ.get("GOOGLE_CLOUD_PROJECT", os.environ.get("PROJECT_ID", "shade-sandbox"))
+location = os.environ.get("GOOGLE_CLOUD_LOCATION", os.environ.get("LOCATION", "us-central1"))
 api_endpoint = f"{location}-aiplatform.googleapis.com"
 
 vertexai.init(

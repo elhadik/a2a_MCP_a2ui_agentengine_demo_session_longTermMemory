@@ -368,8 +368,8 @@ def _get_genai_client():
         import vertexai
         from google.genai import types
         _genai_client = vertexai.Client(
-            project=os.environ.get("PROJECT_ID", "shade-sandbox"),
-            location=os.environ.get("LOCATION", "us-central1"),
+            project=os.environ.get("GOOGLE_CLOUD_PROJECT", os.environ.get("PROJECT_ID", "shade-sandbox")),
+            location=os.environ.get("GOOGLE_CLOUD_LOCATION", os.environ.get("LOCATION", "us-central1")),
             http_options=types.HttpOptions(api_version="v1beta1")
         )
     return _genai_client

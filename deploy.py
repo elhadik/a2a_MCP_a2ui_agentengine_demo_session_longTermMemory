@@ -28,13 +28,13 @@ def main():
     if os.path.exists("agents"):
         os.chdir("agents")
         
-    project_id = os.environ.get("PROJECT_ID")
-    location = os.environ.get("LOCATION", "us-central1")
+    project_id = os.environ.get("GOOGLE_CLOUD_PROJECT", os.environ.get("PROJECT_ID"))
+    location = os.environ.get("GOOGLE_CLOUD_LOCATION", os.environ.get("LOCATION", "us-central1"))
     storage = os.environ.get("STORAGE_BUCKET")
     api_endpoint = f"{location}-aiplatform.googleapis.com"
 
     if not project_id or not storage:
-        print("Error: PROJECT_ID and STORAGE_BUCKET environment variables must be set.")
+        print("Error: GOOGLE_CLOUD_PROJECT (or PROJECT_ID) and STORAGE_BUCKET environment variables must be set.")
         return
 
     print("=" * 80)
