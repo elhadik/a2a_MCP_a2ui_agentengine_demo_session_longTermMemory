@@ -240,12 +240,21 @@ The ADK library automatically resolves the JSON-RPC SSE/Streamable HTTP bindings
 ---
 
 ### B. Gemini Enterprise Agent Engine & Graph Orchestration
-We leverage the **Google GenAI ADK 2** framework to build our multi-agent graph. The system consists of a centralized supervisor (`SupervisorAgent`) that orchestrates pricing assortment and activations by delegating tasks to sub-agents. 
+We leverage the **Google GenAI ADK 2** framework to construct our multi-agent execution graph. Rather than relying on open-ended, non-deterministic agent routing, our topology enforces a strict **state-machine graph** via prompt instructions, structured payloads, and specialized node routing.
 
-Unlike traditional unstructured text chains, our orchestration model represents a deterministic state-machine graph:
-1. The **Supervisor** maps state variables and coordinates user-triggered transitions.
-2. The sub-agents (e.g. `AudienceSizeAgent`) are declared as nodes in the graph with private routing boundaries.
-3. State data (such as target products, audience metrics, and selected partners) is shared across execution sessions securely via the `InMemorySessionService`.
+#### 1. Graph Structure & Node Definition
+The orchestration graph is implemented as a hub-and-spoke tree:
+* **Root Node (Supervisor)**: The `CircanaPilotSupervisor` agent (defined in [agent.py](file:///usr/local/google/home/elhadik/Circana_POC/agents/circana_pilot_agent/agent.py)) coordinates user session contexts, delegates tasks to specific leaf nodes, and projects UI widgets back to the portal.
+* **Leaf Nodes (Sub-Agents)**: Remote `Agent` microservices deployed on the Gemini Enterprise Agent Engine (e.g., `PricingAssortmentOrchestrator`, `LiquidActivateOrchestrator`, and `LoyaltyCampaignOrchestrator`).
+
+#### 2. Deterministic State Transitions
+We map user interactions to a series of four distinct operational phases, preventing the supervisor from diverging or skipping steps:
+* **Phase A (Pricing Analysis)** $\rightarrow$ **HITL Checkpoint** $\rightarrow$ **Phase B (Audience Sizing)** $\rightarrow$ **Phase C (Activation Sync)** $\rightarrow$ **Phase D (Loyalty Campaign)**
+
+This state machine is enforced programmatically in the Supervisor's system instruction template (refer to [agent.py:L20-38](file:///usr/local/google/home/elhadik/Circana_POC/agents/circana_pilot_agent/agent.py#L20-38)):
+1. **State Isolation**: Sub-agents only have access to tools that belong to their specific domain. For instance, the `PricingOpportunitiesAgent` cannot trigger audience activation.
+2. **Context Passing (A2A)**: The root node passes parameters (such as the target cohort product or activation partners) down to the leaf nodes using structured A2A data slots, avoiding unstructured instruction drift.
+3. **Execution Thread Locking**: The supervisor is instructed to halt execution and return control to the portal after completing each phase's A2UI component rendering, waiting for explicit user interaction before transitioning to the next phase.
 
 ---
 
