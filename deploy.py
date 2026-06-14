@@ -62,12 +62,13 @@ def main():
         "python-dotenv==1.2.2",
         "a2a-sdk==0.3.26",
         "cloudpickle==3.1.2",
-        "pydantic==2.13.1",
+        "pydantic==2.13.4",
         "a2ui-agent-sdk==0.2.1",
-        "fastapi==0.136.0",
+        "fastapi==0.137.0",
         "google-cloud-storage",
         "httpx>=0.27.0",
         "google-auth>=2.29.0",
+        "google-adk==1.31.0",
     ]
 
     # Package folder relative to CWD (circana_pilot_agent/)
@@ -104,19 +105,15 @@ def main():
         }
     ]
 
-    deployed_endpoints = {}
+    import concurrent.futures
 
-    for dep in deployments:
-        print(f"\n🚀 Deploying sub-agent: {dep['key']}...")
-        
-        # Create standard card wrapper
+    def deploy_agent(dep):
+        print(f"🚀 Started deploying sub-agent: {dep['key']}...")
         card = dep['card_fn'](host="localhost", port=80)
-        
         a2ui_agent = A2aAgent(
             agent_card=card,
             agent_executor_builder=dep['executor']
         )
-        
         config = {
             "display_name": dep['display_name'],
             "description": dep['description'],
@@ -125,7 +122,6 @@ def main():
             "gcs_dir_name": dep['display_name'],
             "requirements": requirements,
             "extra_packages": extra_packages,
-            "identity_type": "AGENT_IDENTITY",
             "env_vars": {
                 "NUM_WORKERS": "1",
                 "GOOGLE_GENAI_USE_VERTEXAI": "true",
@@ -135,19 +131,24 @@ def main():
                 "MCP_SERVER_URL": os.environ.get("MCP_SERVER_URL", ""),
             }
         }
-        
         try:
             remote_agent = client.agent_engines.create(agent=a2ui_agent, config=config)
             resource_name = remote_agent.api_resource.name
-            endpoint_url = f"https://{api_endpoint}/v1beta1/{resource_name}"
-            
-            print(f"✓ Deployed successfully! Resource name: {resource_name}")
-            print(f"✓ Endpoint URL: {endpoint_url}")
-            deployed_endpoints[dep['key']] = resource_name
+            print(f"✓ Deployed successfully: {dep['key']} -> {resource_name}")
+            return dep['key'], resource_name
         except Exception as ex:
             print(f"✗ Deployment failed for {dep['key']}: {ex}")
             import traceback
             traceback.print_exc()
+            return dep['key'], None
+
+    deployed_endpoints = {}
+    with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
+        futures = [executor.submit(deploy_agent, dep) for dep in deployments]
+        for future in concurrent.futures.as_completed(futures):
+            key, resource_name = future.result()
+            if resource_name:
+                deployed_endpoints[key] = resource_name
 
     print("\n" + "=" * 80)
     print("ALL SUB-AGENTS DEPLOYED SUCCESSFULLY!")
@@ -155,7 +156,7 @@ def main():
     
     # Automatically update .env file
     import re
-    env_path = ".env"
+    env_path = "../.env"
     env_content = ""
     if os.path.exists(env_path):
         with open(env_path, "r") as f:

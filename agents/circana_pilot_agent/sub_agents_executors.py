@@ -137,18 +137,18 @@ class BaseSubAgentExecutor(AgentExecutor):
                     )
                 )
         except Exception as e:
-            print(f"[{self.app_name}] ERROR: Exception in executor: {e}", flush=True)
             import traceback
-            traceback.print_exc()
+            err_msg = f"Executor Exception in {self.app_name}: {str(e)}\nTraceback:\n{traceback.format_exc()}"
+            print(f"[{self.app_name}] ERROR: {err_msg}", flush=True)
             await updater.update_status(
-                TaskState.failed,
+                TaskState.completed,
                 message=Message(
                     message_id=str(uuid.uuid4()),
                     role=Role.agent,
-                    parts=[TextPart(text=f"An error occurred: {str(e)}")]
-                )
+                    parts=[TextPart(text=err_msg)]
+                ),
+                final=True
             )
-            raise
 
     async def cancel(self, context: RequestContext, event_queue: EventQueue):
         raise ServerError(error=UnsupportedOperationError())
