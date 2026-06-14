@@ -232,9 +232,9 @@ graph TD
 | Agent Name | Role & Objective | Deployed Endpoint (Vertex AI) | Exposed Skills |
 | :--- | :--- | :--- | :--- |
 | **CircanaPilotSupervisor** | Root coordinator supervising the multi-agent pipeline and managing session state. | *Local web server executor* | Pipeline routing, callback execution, A2UI normalization. |
-| **PricingAssortmentOrchestrator** | specialist agent identifying pricing opportunities and category buyer loss. | `projects/943928157761/locations/us-central1/reasoningEngines/5913690854400196608` | Portfolio search, category shopper attrition mapping. |
-| **LiquidActivateOrchestrator** | specialist agent coordinating cohort audience sizing and activation exports. | `projects/943928157761/locations/us-central1/reasoningEngines/3977143014630883328` | Audience sizing, LiveRamp/Google Customer Match sync. |
-| **LoyaltyCampaignOrchestrator** | specialist agent customizing personalization parameters and reward launches. | `projects/943928157761/locations/us-central1/reasoningEngines/4675200956873310208` | Campaign personalization, loyalty rewards activation. |
+| **PricingAssortmentOrchestrator** | specialist agent identifying pricing opportunities and category buyer loss. | `projects/943928157761/`<br>`locations/us-central1/`<br>`reasoningEngines/`<br>`5913690854400196608` | Portfolio search, category shopper attrition mapping. |
+| **LiquidActivateOrchestrator** | specialist agent coordinating cohort audience sizing and activation exports. | `projects/943928157761/`<br>`locations/us-central1/`<br>`reasoningEngines/`<br>`3977143014630883328` | Audience sizing, LiveRamp/Google Customer Match sync. |
+| **LoyaltyCampaignOrchestrator** | specialist agent customizing personalization parameters and reward launches. | `projects/943928157761/`<br>`locations/us-central1/`<br>`reasoningEngines/`<br>`4675200956873310208` | Campaign personalization, loyalty rewards activation. |
 
 > [!IMPORTANT]
 > **Stateful Context Memory**: In the local development runner, session state is managed via `InMemoryMemoryService`. 
