@@ -29,6 +29,7 @@ The application is built on the **Gemini Enterprise Agent Engine**, implementing
 7.  **Circana MCP Server on Cloud Run:** Host service built to run the Model Context Protocol in the cloud. It wraps our custom Audience Builder database APIs into standard MCP JSON-RPC schemas and exposes them safely via HTTPS.
 8.  **Sessions & Memory Bank:** Manages session state preservation across chat turns. Integrates short-term session memory for conversation context with the **Gemini Enterprise Memory Bank** to extract and recall long-term user preferences and campaign history across browser reloads.
 9.  **Agent Observability & Cloud Logging:** Emits execution telemetry, network latency, token consumption, and safety violations directly to **GCP Cloud Logging** to enable full tracing of A2A calls and tool usage per transaction step.
+10. **Agent Identity (SPIFFE ID):** Native GCP IAM security protocol assigning cryptographically-attested SPIFFE IDs to each sub-agent for fine-grained authorization and auditing.
 
 ---
 
@@ -121,6 +122,13 @@ sequenceDiagram
     > *"Gemini Enterprise Agent Engine lets you deploy python-based orchestration frameworks (such as LangChain or custom agent models) to Google Cloud as fully-managed endpoints."* — [Google Cloud Gemini Enterprise Agent Engine Guide](https://cloud.google.com/vertex-ai/generative-ai/docs/reasoning-engine/overview)
 *   **Live Proof-of-Deployment (Agent Engine Endpoints):**
     ![GCP Agent Engine Registered Endpoints](architecture/screenshots/agent_engine_registered.png)
+
+### 🪪 GCP Agent Identity (SPIFFE ID)
+*   **Definition:** A purpose-built, native IAM security protocol that assigns unique, cryptographically-attested SPIFFE identities to deployed AI agents. This avoids the use of shared, over-privileged master service account keys and enables granular audit logs.
+*   **System Integration:** All Circana sub-agents are deployed with `"identity_type": "AGENT_IDENTITY"`, binding their runtime permissions strictly to their individual execution scopes.
+*   **Official Citation:**
+    > *"Agent Identity provides a strongly attested, SPIFFE-based cryptographic identity for each individual agent... This promotes a least-privilege approach to agent permissions, bounding access tokens to the agent runtime and ensuring non-repudiable auditing of agent actions."* — [Google Cloud Gemini Enterprise Agent Platform Security Guide](https://cloud.google.com/vertex-ai/generative-ai/docs/agent-platform/security)
+
 
 ### 👥 Multi-Agent Teamwork Topology & Active Registry
 The system utilizes a hub-and-spoke supervisor pattern. The root supervisor orchestrates the pipeline phases, parses A2UI layout responses, and coordinates state transitions.
