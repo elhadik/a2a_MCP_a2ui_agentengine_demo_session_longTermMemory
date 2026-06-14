@@ -178,21 +178,32 @@ The supervisor delegates the initial query to the **Pricing Agent**, which queri
 
 ---
 
-### Step B: Audience Sizing Dashboard
-Clicking **Select Cohort** on the widget triggers a Human-in-the-Loop callback. The supervisor invokes the **Activation Agent**, which executes tools on the registered `circana-mcp-server` Cloud Run instance. Sizing counts and activation channel selections are rendered on a polished dashboard card:
+### Step B: Asynchronous Query Polling & GUI Lock
+To prevent HTTP timeouts and browser hangs during long-running database queries, selecting a product cohort triggers an asynchronous MCP database job. The MCP tool immediately yields a unique `job_id` and initial `status: "Running"`. 
+
+The client UI instantly locks all inputs (text fields, speech recognition mic, attachment buttons, and send controls) and initiates a background polling loop against `GET /api/jobs/{job_id}`. Real-time progression checklists are rendered dynamically in the chat timeline, updating stakeholders on query progress:
+
+![Asynchronous DB Query Polling & Lock](architecture/screenshots/async_polling_progress.png)
+
+Once progress reaches 100%, the interface automatically unlocks, appends the completed cohort segment ID to the context, and proceeds to the sizing dashboard.
+
+---
+
+### Step C: Audience Sizing Dashboard
+Once the background job completes, the supervisor invokes the **Activation Agent**, which executes tools on the registered `circana-mcp-server` Cloud Run instance. Sizing counts and activation channel selections are rendered on a polished dashboard card:
 
 ![Interactive Cohort Sizing Dashboard](architecture/screenshots/sizing_dashboard_step_b_final.png)
 
 ---
 
-### Step C: Export Sync Confirmation
+### Step D: Export Sync Confirmation
 Upon selecting the channels (LiveRamp, Google Customer Match) and clicking **Activate**, the agent runs the export tool and writes success events back to the session logger:
 
 ![Sync Confirmation Success](architecture/screenshots/sync_confirmation_step_c_final.png)
 
 ---
 
-### Step D: File Attachments & Multi-Modal Input
+### Step E: File Attachments & Multi-Modal Input
 Marketers can stage external data files (e.g. `invoice.txt` promo reports) directly from their workspace. Files are securely uploaded to Google Cloud Storage (GCS) staging buckets, and visual chips with delete controls are rendered dynamically in the chat console before task execution:
 
 ![Staged File Attachment Input Badge](architecture/screenshots/uploader_chip_staging.png)

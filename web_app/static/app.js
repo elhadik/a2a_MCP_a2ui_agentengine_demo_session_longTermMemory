@@ -14,6 +14,12 @@ const sandboxPane = document.querySelector('.sandbox-pane');
 const sidebarPane = document.querySelector('.sidebar-pane');
 const btnToggleSidebar = document.getElementById('btn-toggle-sidebar');
 
+const btnAttach = document.getElementById('btn-attach');
+const btnMic = document.getElementById('btn-mic');
+const fileInput = document.getElementById('file-upload-input');
+const stagedFilesArea = document.getElementById('staged-files-area');
+let stagedFiles = [];
+
 function updateSandboxVisibility() {
     if (activeWidgets > 0) {
         sandboxPane.classList.remove('collapsed');
@@ -72,6 +78,17 @@ function setIndicator(activeName) {
     });
 }
 
+function speakText(text) {
+    if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const cleanText = text.replace(/[*_#`⚠️]/g, '').trim();
+        const utterance = new SpeechSynthesisUtterance(cleanText);
+        window.speechSynthesis.speak(utterance);
+    } else {
+        console.warn("Speech Synthesis not supported in this browser.");
+    }
+}
+
 function appendMessage(role, text) {
     const msgDiv = document.createElement('div');
     msgDiv.className = `message ${role}`;
@@ -83,11 +100,22 @@ function appendMessage(role, text) {
     const contentDiv = document.createElement('div');
     contentDiv.className = 'content';
     contentDiv.textContent = text;
+    contentDiv.style.whiteSpace = 'pre-wrap';
+    
+    if (role === 'agent') {
+        const speakBtn = document.createElement('button');
+        speakBtn.className = 'btn-speak';
+        speakBtn.innerHTML = '🔊';
+        speakBtn.title = 'Speak text';
+        speakBtn.onclick = () => speakText(text);
+        contentDiv.appendChild(speakBtn);
+    }
     
     msgDiv.appendChild(avatarDiv);
     msgDiv.appendChild(contentDiv);
     chatMessages.appendChild(msgDiv);
     chatMessages.scrollTop = chatMessages.scrollHeight;
+    return contentDiv;
 }
 
 function renderA2UIWidget(widget) {
@@ -313,14 +341,28 @@ async function selectSession(id) {
 
 // User text query input submission
 async function submitUserMessage(message) {
-    if (!message.trim() || !activeSessionId) return;
+    if (!message.trim() && stagedFiles.length === 0) return;
+    if (!activeSessionId) return;
     
-    appendMessage('user', message);
+    let displayMessage = message;
+    if (stagedFiles.length > 0) {
+        displayMessage += "\n📎 Files attached: " + stagedFiles.map(f => f.filename).join(', ');
+    }
+    
+    appendMessage('user', displayMessage);
     userInput.value = '';
+    
+    const attachments = stagedFiles.map(f => f.gcs_uri);
+    
+    // Clear staging area
+    stagedFiles = [];
+    stagedFilesArea.innerHTML = '';
     
     // Disable inputs
     userInput.disabled = true;
     btnSend.disabled = true;
+    btnAttach.disabled = true;
+    btnMic.disabled = true;
     setIndicator('supervisor');
     
     const msgLower = message.toLowerCase();
@@ -335,7 +377,7 @@ async function submitUserMessage(message) {
         const response = await fetch('/api/chat', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ message: message, session_id: activeSessionId })
+            body: JSON.stringify({ message: message, session_id: activeSessionId, attachments: attachments })
         });
         
         if (!response.ok) {
@@ -348,6 +390,10 @@ async function submitUserMessage(message) {
         setIndicator('supervisor');
         
         removeTypingIndicator();
+        if (data.status === "Running" && data.job_id) {
+            await handleJobPolling(data.job_id, data.message || "Queueing database job...");
+            return;
+        }
         if (data.text) {
             appendMessage('agent', data.text);
         }
@@ -363,6 +409,8 @@ async function submitUserMessage(message) {
         removeTypingIndicator();
         userInput.disabled = false;
         btnSend.disabled = false;
+        btnAttach.disabled = false;
+        btnMic.disabled = false;
         userInput.focus();
     }
 }
@@ -409,6 +457,10 @@ async function submitInteractiveAction(action) {
         setIndicator('supervisor');
         
         removeTypingIndicator();
+        if (data.status === "Running" && data.job_id) {
+            await handleJobPolling(data.job_id, data.message || "Queueing database job...");
+            return;
+        }
         if (data.text) {
             appendMessage('agent', data.text);
         }
@@ -463,6 +515,166 @@ window.suggest = function(text) {
     userInput.value = text;
     submitUserMessage(text);
 };
+
+// File Attachment Event Listeners
+if (btnAttach && fileInput) {
+    btnAttach.addEventListener('click', () => {
+        fileInput.click();
+    });
+
+    fileInput.addEventListener('change', async () => {
+        if (fileInput.files.length === 0) return;
+        const file = fileInput.files[0];
+        
+        // Show uploading chip placeholder
+        const chip = document.createElement('div');
+        chip.className = 'staged-file-chip';
+        chip.innerHTML = `<span>Uploading: ${file.name}...</span>`;
+        stagedFilesArea.appendChild(chip);
+        
+        const formData = new FormData();
+        formData.append('file', file);
+        
+        try {
+            const response = await fetch('/api/upload', {
+                method: 'POST',
+                body: formData
+            });
+            
+            if (!response.ok) throw new Error("Upload failed");
+            const resData = await response.json();
+            
+            // Add to staged list
+            stagedFiles.push(resData);
+            
+            // Render completed chip with delete option
+            chip.innerHTML = `
+                <span>📎 ${file.name}</span>
+                <button onclick="removeStagedFile('${resData.gcs_uri}', this)">×</button>
+            `;
+        } catch (err) {
+            console.error("Upload error:", err);
+            chip.innerHTML = `<span style="color: #ef4444;">Failed to upload: ${file.name}</span>`;
+            setTimeout(() => chip.remove(), 3000);
+        } finally {
+            fileInput.value = '';
+        }
+    });
+}
+
+function removeStagedFile(gcsUri, buttonEl) {
+    stagedFiles = stagedFiles.filter(f => f.gcs_uri !== gcsUri);
+    buttonEl.parentElement.remove();
+}
+window.removeStagedFile = removeStagedFile;
+
+// Voice Speech Recognition (STT) Bindings
+let recognition = null;
+let isRecording = false;
+
+if (btnMic && ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    recognition = new SpeechRecognition();
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    recognition.lang = 'en-US';
+    
+    recognition.onstart = () => {
+        isRecording = true;
+        btnMic.classList.add('recording');
+        userInput.placeholder = "Listening...";
+    };
+    
+    recognition.onresult = (event) => {
+        const resultText = event.results[0][0].transcript;
+        userInput.value = resultText;
+    };
+    
+    recognition.onerror = (event) => {
+        console.error("Speech recognition error:", event.error);
+    };
+    
+    recognition.onend = () => {
+        isRecording = false;
+        btnMic.classList.remove('recording');
+        userInput.placeholder = "Ask the coordinator a question or command...";
+    };
+
+    btnMic.addEventListener('click', () => {
+        if (!recognition) return;
+        if (isRecording) {
+            recognition.stop();
+        } else {
+            recognition.start();
+        }
+    });
+} else if (btnMic) {
+    btnMic.style.display = 'none';
+}
+
+async function handleJobPolling(jobId, initialMsg) {
+    userInput.disabled = true;
+    btnSend.disabled = true;
+    btnAttach.disabled = true;
+    btnMic.disabled = true;
+    
+    const loadingDiv = appendMessage('system', `🕒 [Job ${jobId}]: ${initialMsg} (0% complete)`);
+    
+    return new Promise((resolve, reject) => {
+        const checkInterval = setInterval(async () => {
+            try {
+                const res = await fetch(`/api/jobs/${jobId}`);
+                if (!res.ok) {
+                    clearInterval(checkInterval);
+                    loadingDiv.innerHTML = `❌ Job ${jobId} failed to check status.`;
+                    userInput.disabled = false;
+                    btnSend.disabled = false;
+                    btnAttach.disabled = false;
+                    btnMic.disabled = false;
+                    reject(new Error("Failed to check status"));
+                    return;
+                }
+                const job = await res.json();
+                if (job.status === "Running") {
+                    loadingDiv.innerHTML = `🕒 [Job ${jobId}]: ${job.message} (${job.progress}% complete)`;
+                } else if (job.status === "Completed") {
+                    clearInterval(checkInterval);
+                    loadingDiv.innerHTML = `✅ Job ${jobId} completed successfully!`;
+                    
+                    if (job.result && job.result.message) {
+                        appendMessage('agent', job.result.message);
+                    }
+                    
+                    userInput.disabled = false;
+                    btnSend.disabled = false;
+                    btnAttach.disabled = false;
+                    btnMic.disabled = false;
+                    
+                    if (job.result && job.result.audience_id) {
+                        await submitChatMessage(`Calculate estimated match audience reach sizing metrics for isolation audience ID: ${job.result.audience_id}`);
+                    }
+                    resolve(job.result);
+                } else {
+                    clearInterval(checkInterval);
+                    loadingDiv.innerHTML = `❌ Job ${jobId} failed: ${job.message || "Unknown error"}`;
+                    userInput.disabled = false;
+                    btnSend.disabled = false;
+                    btnAttach.disabled = false;
+                    btnMic.disabled = false;
+                    reject(new Error(job.message || "Job failed"));
+                }
+            } catch (err) {
+                clearInterval(checkInterval);
+                loadingDiv.innerHTML = `❌ Connection error checking job ${jobId}.`;
+                userInput.disabled = false;
+                btnSend.disabled = false;
+                btnAttach.disabled = false;
+                btnMic.disabled = false;
+                reject(err);
+            }
+        }, 2000);
+    });
+}
 
 // Initial Load
 loadSessions();

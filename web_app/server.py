@@ -10,8 +10,8 @@ sys.modules['urllib3.contrib.pyopenssl'] = None
 import uuid
 import logging
 import datetime
-from typing import Dict, Any, List
-from fastapi import FastAPI, HTTPException
+from typing import Dict, Any, List, Optional
+from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from dotenv import load_dotenv
@@ -29,6 +29,7 @@ from a2a.types import Message, Role, TextPart, DataPart, Part
 
 import vertexai
 from google.genai import types
+from google.api_core.exceptions import ResourceExhausted
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("web_app_server")
@@ -57,6 +58,7 @@ agent_url = os.environ.get("PRICING_AGENT_URL")
 class ChatRequest(BaseModel):
     message: str
     session_id: str
+    attachments: Optional[List[str]] = None
 
 class ActionRequest(BaseModel):
     action: Dict[str, Any]
@@ -64,7 +66,7 @@ class ActionRequest(BaseModel):
 
 executor = CircanaPilotExecutor()
 
-async def run_executor_turn(session_id: str, prompt_part: Part) -> Dict[str, Any]:
+async def run_executor_turn(session_id: str, prompt_parts: List[Part]) -> Dict[str, Any]:
     from a2a.types import MessageSendParams
     task_id = str(uuid.uuid4())
     
@@ -73,7 +75,7 @@ async def run_executor_turn(session_id: str, prompt_part: Part) -> Dict[str, Any
             message=Message(
                 message_id=str(uuid.uuid4()),
                 role=Role.user,
-                parts=[prompt_part]
+                parts=prompt_parts
             )
         ),
         context_id=session_id,
@@ -112,9 +114,29 @@ async def run_executor_turn(session_id: str, prompt_part: Part) -> Dict[str, Any
                             elif "data" in root_part:
                                 a2ui_widgets.append(root_part["data"])
                         
+    import re
+    status = "Completed"
+    job_id = None
+    message = None
+    
+    if "status" in text_response and "job_id" in text_response:
+        try:
+            m = re.search(r'\{[^{}]*"status"\s*:\s*"Running"[^{}]*"job_id"\s*:\s*"([^"]+)"[^{}]*\}', text_response)
+            if m:
+                job_id = m.group(1)
+                status = "Running"
+                msg_m = re.search(r'"message"\s*:\s*"([^"]+)"', text_response)
+                if msg_m:
+                    message = msg_m.group(1)
+        except Exception as pe:
+            logger.error(f"Error parsing job details from response: {pe}")
+            
     return {
         "text": text_response.strip(),
-        "widgets": a2ui_widgets
+        "widgets": a2ui_widgets,
+        "status": status,
+        "job_id": job_id,
+        "message": message
     }
 
 @app.get("/api/sessions")
@@ -224,8 +246,14 @@ async def delete_session(session_id: str):
 async def chat_endpoint(req: ChatRequest):
     try:
         logger.info(f"Received chat request for session {req.session_id}: {req.message}")
+        
+        prompt_parts = [Part(root=TextPart(text=req.message))]
+        if req.attachments:
+            for attachment_uri in req.attachments:
+                prompt_parts.append(Part(root=TextPart(text=f"[User Attachment: {attachment_uri}]")))
+                
         if not agent_url or "projects/" not in agent_url:
-            result = await run_executor_turn(req.session_id, Part(root=TextPart(text=req.message)))
+            result = await run_executor_turn(req.session_id, prompt_parts)
             return result
         session_name = f"{agent_url}/sessions/{req.session_id}"
         
@@ -246,7 +274,7 @@ async def chat_endpoint(req: ChatRequest):
         except Exception as se:
             logger.error(f"Failed to append user message event to session: {se}")
             
-        result = await run_executor_turn(req.session_id, Part(root=TextPart(text=req.message)))
+        result = await run_executor_turn(req.session_id, prompt_parts)
         
         # 2. Append Agent Response Event
         try:
@@ -271,6 +299,12 @@ async def chat_endpoint(req: ChatRequest):
             logger.error(f"Failed to append agent response event to session: {se}")
             
         return result
+    except ResourceExhausted as re:
+        logger.error(f"Quota limits exceeded: {re}", exc_info=True)
+        raise HTTPException(
+            status_code=429,
+            detail="⚠️ API Quota Exceeded: The system is receiving too many requests. Please wait a few seconds and try again."
+        )
     except Exception as e:
         logger.error(f"Error in chat endpoint: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
@@ -280,7 +314,7 @@ async def action_endpoint(req: ActionRequest):
     try:
         logger.info(f"Received action request for session {req.session_id}: {req.action}")
         if not agent_url or "projects/" not in agent_url:
-            result = await run_executor_turn(req.session_id, Part(root=DataPart(data=req.action)))
+            result = await run_executor_turn(req.session_id, [Part(root=DataPart(data=req.action))])
             return result
         session_name = f"{agent_url}/sessions/{req.session_id}"
         
@@ -302,7 +336,7 @@ async def action_endpoint(req: ActionRequest):
         except Exception as se:
             logger.error(f"Failed to append action click event to session: {se}")
             
-        result = await run_executor_turn(req.session_id, Part(root=DataPart(data=req.action)))
+        result = await run_executor_turn(req.session_id, [Part(root=DataPart(data=req.action))])
         
         # 2. Append Agent Response Event
         try:
@@ -327,8 +361,54 @@ async def action_endpoint(req: ActionRequest):
             logger.error(f"Failed to append agent response event to session: {se}")
             
         return result
+    except ResourceExhausted as re:
+        logger.error(f"Quota limits exceeded: {re}", exc_info=True)
+        raise HTTPException(
+            status_code=429,
+            detail="⚠️ API Quota Exceeded: The system is receiving too many requests. Please wait a few seconds and try again."
+        )
     except Exception as e:
         logger.error(f"Error in action endpoint: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/jobs/{job_id}")
+async def get_job_status(job_id: str):
+    try:
+        from circana_pilot_agent.tools import call_mcp_tool
+        result = call_mcp_tool("check-job-status", {"job_id": job_id})
+        return result
+    except Exception as e:
+        logger.error(f"Error checking status for job {job_id}: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+# Fetch storage bucket name
+storage = os.environ.get("STORAGE_BUCKET")
+
+@app.post("/api/upload")
+async def upload_file(file: UploadFile = File(...)):
+    try:
+        if not storage:
+            raise HTTPException(status_code=500, detail="GCS storage bucket not configured (STORAGE_BUCKET environment variable must be set).")
+            
+        from google.cloud import storage as gcs_storage
+        storage_client = gcs_storage.Client()
+        bucket = storage_client.bucket(storage)
+        
+        blob_name = f"uploads/{uuid.uuid4()}_{file.filename}"
+        blob = bucket.blob(blob_name)
+        
+        blob.upload_from_file(file.file, content_type=file.content_type)
+        
+        gcs_uri = f"gs://{storage}/{blob_name}"
+        logger.info(f"Successfully uploaded {file.filename} to GCS: {gcs_uri}")
+        
+        return {
+            "filename": file.filename,
+            "gcs_uri": gcs_uri,
+            "content_type": file.content_type
+        }
+    except Exception as e:
+        logger.error(f"Failed to upload file to GCS: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 # Serve the static files from the static directory under the root URL

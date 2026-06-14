@@ -32,9 +32,42 @@ def handle_list_tools():
                     },
                     "required": ["audience_id"]
                 }
+            },
+            {
+                "name": "check-job-status",
+                "description": "Checks status of an asynchronous MCP database query.",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "job_id": {"type": "string", "description": "The Job ID to inspect."}
+                    },
+                    "required": ["job_id"]
+                }
             }
         ]
     }
+
+import os
+import tempfile
+import uuid
+
+JOBS_FILE = os.path.join(tempfile.gettempdir(), "mcp_mock_jobs.json")
+
+def _load_jobs() -> dict:
+    if os.path.exists(JOBS_FILE):
+        try:
+            with open(JOBS_FILE, "r") as f:
+                return json.load(f)
+        except Exception:
+            pass
+    return {}
+
+def _save_jobs(jobs: dict):
+    try:
+        with open(JOBS_FILE, "w") as f:
+            json.dump(jobs, f)
+    except Exception:
+        pass
 
 def handle_call_tool(name, arguments):
     logger.info(f"mcp_server: Calling tool {name} with args {arguments}")
@@ -58,13 +91,61 @@ def handle_call_tool(name, arguments):
         else:
             shoppers = 300000
             
-        result = {
-            "status": "Created",
-            "audience_id": aud_id,
+        job_id = f"job_{uuid.uuid4().hex[:8]}"
+        jobs = _load_jobs()
+        jobs[job_id] = {
+            "status": "Running",
+            "progress": 0,
             "product_name": product_name,
+            "spend_criteria": spend_criteria,
             "shoppers_isolated": shoppers,
-            "message": f"Successfully materialized cohort for {product_name} containing {shoppers:,} historical shoppers."
+            "aud_id": aud_id
         }
+        _save_jobs(jobs)
+        
+        result = {
+            "status": "Running",
+            "job_id": job_id,
+            "message": f"Query isolation request queued. Materializing shopper cohort database views for {product_name}..."
+        }
+        return {
+            "content": [
+                {
+                    "type": "text",
+                    "text": json.dumps(result, indent=2)
+                }
+            ]
+        }
+    elif name == "check-job-status":
+        job_id = arguments.get("job_id")
+        jobs = _load_jobs()
+        if not job_id or job_id not in jobs:
+            result = {
+                "status": "Failed",
+                "job_id": job_id or "unknown",
+                "message": f"Job ID '{job_id}' not found in registry."
+            }
+        else:
+            job = jobs[job_id]
+            if job["status"] == "Running":
+                job["progress"] += 40
+                if job["progress"] >= 100:
+                    job["status"] = "Completed"
+                    job["result"] = {
+                        "status": "Created",
+                        "audience_id": job["aud_id"],
+                        "product_name": job["product_name"],
+                        "shoppers_isolated": job["shoppers_isolated"],
+                        "message": f"Successfully materialized cohort for {job['product_name']} containing {job['shoppers_isolated']:,} shoppers."
+                    }
+                _save_jobs(jobs)
+            result = {
+                "job_id": job_id,
+                "status": job["status"],
+                "progress": min(job["progress"], 100),
+                "message": f"Materializing database views ({min(job['progress'], 100)}% complete)...",
+                "result": job.get("result")
+            }
         return {
             "content": [
                 {
