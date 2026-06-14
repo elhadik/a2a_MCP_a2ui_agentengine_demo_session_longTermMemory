@@ -338,52 +338,71 @@ All session telemetries, tool executions, and safety screenings are logged nativ
 
 ---
 
-## 6. Local Web App Setup & Execution
+## 6. Setup & Deployment Guide from Scratch
 
-### Prerequisites
-*   Python 3.13 Virtual Environment (`.venv`)
-*   Google Cloud SDK initialized on project `shade-sandbox`.
+This guide walks through deploying the entire Multi-Agent platform and MCP tool ecosystem from scratch on Google Cloud Platform.
 
-### Step 1: Environment Variables Setup
-Initialize `.env` in the project root:
-```env
-GOOGLE_GENAI_USE_VERTEXAI=true
-GOOGLE_CLOUD_PROJECT=shade-sandbox
-GOOGLE_CLOUD_LOCATION=us-central1
-GOOGLE_GENAI_MODEL=gemini-2.5-flash
-
-# Cloud Run MCP Server Url
-MCP_SERVER_URL=https://circana-mcp-server-943928157761.us-central1.run.app
-
-# Deployed Gemini Enterprise Agent Engine Resource IDs
-PRICING_AGENT_URL=projects/943928157761/locations/us-central1/reasoningEngines/3371690339726262272
-ACTIVATE_AGENT_URL=projects/943928157761/locations/us-central1/reasoningEngines/1265131614023712768
-LOYALTY_AGENT_URL=projects/943928157761/locations/us-central1/reasoningEngines/7172728425226960896
-```
-
-### Step 2: Start the Web Portal App
-Run the dev server locally using the active virtual environment:
-```bash
-source .venv/bin/activate
-uvicorn web_app.server:app --host 0.0.0.0 --port 8000
-```
-Open your browser and navigate to `http://localhost:8000` to start orchestrating.
+### 📋 Prerequisites
+1. **Google Cloud SDK**: Install the `gcloud` CLI. Authenticate your CLI and set up Application Default Credentials (ADC):
+   ```bash
+   gcloud auth login
+   gcloud auth application-default login
+   ```
+2. **Project Configuration**: Ensure your target GCP project (e.g., `shade-sandbox`) is active, with Vertex AI, Cloud Run, and Cloud Storage APIs enabled.
+3. **Environment Setup**: Ensure Python 3.13 is installed. Create and activate a virtual environment, then install requirements:
+   ```bash
+   python3.13 -m venv .venv
+   source .venv/bin/activate
+   pip install -r requirements.txt
+   ```
 
 ---
 
-## 7. Developer Utility Scripts
+### 🚀 Step-by-Step Setup
 
-### Deploying Sub-Agents
-To package and deploy/redeploy the Pricing, Activation, and Loyalty orchestrator agents to Gemini Enterprise Agent Engine:
-```bash
-.venv/bin/python3 deploy.py
-```
-This script serializes the execution graphs, uploads dependencies to the Cloud Storage bucket (`gs://shade-agent-staging`), and registers the reasoning engines in Vertex AI.
+#### Step 1: Deploy the MCP Tool Server to Cloud Run
+The MCP server hosts the audience building database querying engines. It must be deployed first so the sub-agents can fetch its endpoint.
 
-### Cleaning Up Redundant Endpoints
-To avoid endpoint sprawl and remove old reasoning engine deployments:
-```bash
-.venv/bin/python3 scripts/delete_unused_engines.py
+1. Ensure the `deploy_mcp.py` script is configured with your target GCP `project_id` and preferred deployment `region`.
+2. Run the deployment script:
+   ```bash
+   python deploy_mcp.py
+   ```
+   *This command uploads the local MCP workspace, builds a container on Google Cloud Run, deploys it securely (disallowing public unauthenticated access), and updates your `.env` file with the generated `MCP_SERVER_URL`.*
+
+---
+
+#### Step 2: Deploy Orchestrator Sub-Agents to Vertex AI
+Once the MCP server is live, the specialist sub-agents (Pricing, Activate, Loyalty) must be packaged and deployed as managed Reasoning Engine endpoints.
+
+1. Set the staging GCS bucket variable in your environment or `.env` file:
+   ```env
+   STORAGE_BUCKET=gs://shade-agent-staging
+   ```
+2. Run the deployment script:
+   ```bash
+   python deploy.py
+   ```
+   *This script packages the local agent modules (under the `circana_pilot_agent` namespace), bundles dependencies (like `a2a-sdk` and `google-genai`), serializes the agent graphs, uploads them to your GCS staging bucket, creates Vertex AI Reasoning Engine resources, and automatically updates your local `.env` file with the new resource URLs (`PRICING_AGENT_URL`, `ACTIVATE_AGENT_URL`, `LOYALTY_AGENT_URL`).*
+
+---
+
+#### Step 3: Run the Local Web Application
+With all remote APIs and sub-agent endpoints successfully deployed and synchronized in your local `.env` file, start the local FastAPI web server:
+
+1. Launch the web application using uvicorn:
+   ```bash
+   uvicorn web_app.server:app --host 0.0.0.0 --port 8000
+   ```
+2. Open your browser and navigate to `http://localhost:8000` to interact with the visual orchestrator portal.
+
+---
+
+### 🧹 Step 4: Maintenance & Utilities
+*   **Decoy/Stale Engine Cleanup**: To avoid resource leaks and clean up old/orphaned reasoning engine deployments:
+    ```bash
+    python scripts/delete_unused_engines.py
+    ```
 ```
 This utility fetches all active reasoning engine deployments, matches them against the current IDs declared in your `.env` configuration, and rate-limits the deletion of any unreferenced/orphaned engines in the GCP project.
 
