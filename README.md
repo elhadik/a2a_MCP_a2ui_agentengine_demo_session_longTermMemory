@@ -251,6 +251,9 @@ All session telemetries, tool executions, and safety screenings are logged nativ
 * **Execution Telemetry**: Trace IDs are propagated across the A2A network, matching Supervisor delegation steps with Cloud Run MCP container requests.
 * **Cost Auditing**: Token consumption details and model latency are written per turn for exact cost computation.
 * **Audit Traces**: Cloud Run request logs monitor endpoint access, rejecting unauthenticated requests automatically.
+* **Observability Metrics**: The Vertex AI Agent Platform dashboard tracks queries per second, latency profiles, error rates, and container system resources:
+
+  ![Agent Observability Dashboard Metrics](architecture/screenshots/agent_observability_metrics.png)
 
 ![GCP Cloud Run Request Logs](architecture/screenshots/cloud_run_mcp_logs.png)
 
