@@ -100,12 +100,30 @@ PRODUCT_TABLE_HTML_TEMPLATE = r"""<!DOCTYPE html>
             color: var(--warning);
             font-weight: 600;
         }
+        .btn-download {
+            background: transparent;
+            border: 1px solid var(--accent-secondary);
+            color: var(--accent-primary);
+            padding: 5px 10px;
+            border-radius: 6px;
+            font-size: 0.72rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-download:hover {
+            background-color: var(--accent-secondary);
+            color: #ffffff;
+        }
     </style>
 </head>
 <body>
-    <div class="header">
-        <h1>Buyer Attrition & Pricing Analysis</h1>
-        <p>Identify products with lost households due to 52-week price changes. Select a product to initiate the activation pipeline.</p>
+    <div class="header" style="display: flex; justify-content: space-between; align-items: center;">
+        <div>
+            <h1>Buyer Attrition & Pricing Analysis</h1>
+            <p>Identify products with lost households due to 52-week price changes. Select a product to initiate the activation pipeline.</p>
+        </div>
+        <button class="btn-download" onclick="downloadCSV()">Download CSV</button>
     </div>
 
     <div class="table-container">
@@ -128,6 +146,21 @@ PRODUCT_TABLE_HTML_TEMPLATE = r"""<!DOCTYPE html>
         const data = window.INJECTED_DATA || [];
         const tbody = document.getElementById('table-body');
         
+        function downloadCSV() {
+            let csvContent = "data:text/csv;charset=utf-8,";
+            csvContent += "Product,Lost Households %,Volume Change\n";
+            data.forEach(item => {
+                csvContent += `"${item.product_name}",${item.lost_households_pct},${item.volume_change}\n`;
+            });
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "pricing_opportunities.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
         data.forEach(item => {
             const tr = document.createElement('tr');
             
@@ -158,7 +191,6 @@ PRODUCT_TABLE_HTML_TEMPLATE = r"""<!DOCTYPE html>
             };
             actionTd.appendChild(btn);
             tr.appendChild(actionTd);
-            
             tbody.appendChild(tr);
         });
     </script>
@@ -283,12 +315,30 @@ SIZING_DASHBOARD_HTML_TEMPLATE = r"""<!DOCTYPE html>
         .btn-activate:hover {
             opacity: 0.9;
         }
+        .btn-download {
+            background: transparent;
+            border: 1px solid var(--accent-secondary);
+            color: var(--accent-primary);
+            padding: 5px 10px;
+            border-radius: 6px;
+            font-size: 0.72rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-download:hover {
+            background-color: var(--accent-secondary);
+            color: #ffffff;
+        }
     </style>
 </head>
 <body>
-    <div class="header">
-        <h1>Audience Dashboard</h1>
-        <p id="product-context">Cohort details for selected product</p>
+    <div class="header" style="display: flex; justify-content: space-between; align-items: center;">
+        <div>
+            <h1>Audience Dashboard</h1>
+            <p id="product-context">Cohort details for selected product</p>
+        </div>
+        <button class="btn-download" onclick="downloadCSV()">Download CSV</button>
     </div>
 
     <div class="kpi-container">
@@ -339,6 +389,44 @@ SIZING_DASHBOARD_HTML_TEMPLATE = r"""<!DOCTYPE html>
         document.getElementById('product-context').textContent = `Cohort details for product: ${data.product_name || 'Selected Cohort'}`;
         document.getElementById('val-size').textContent = (data.scaled_size || 0).toLocaleString();
         document.getElementById('val-reach').textContent = `${data.reach_percentage || 0}%`;
+
+        // Cache Key & Local Storage Loading
+        const cacheKey = `sizing_partners_${data.product_name || 'default'}`;
+        const cached = localStorage.getItem(cacheKey);
+        if (cached) {
+            const checkedPartners = JSON.parse(cached);
+            document.querySelectorAll("input[name='partner']").forEach(cb => {
+                cb.checked = checkedPartners.includes(cb.value);
+            });
+        }
+
+        // Save State Listener
+        document.querySelectorAll("input[name='partner']").forEach(cb => {
+            cb.addEventListener('change', () => {
+                const checkedBoxes = document.querySelectorAll("input[name='partner']:checked");
+                const partners = Array.from(checkedBoxes).map(cb => cb.value);
+                localStorage.setItem(cacheKey, JSON.stringify(partners));
+            });
+        });
+
+        function downloadCSV() {
+            let csvContent = "data:text/csv;charset=utf-8,";
+            csvContent += "Metric,Value\n";
+            csvContent += `Product,"${data.product_name || 'Selected Cohort'}"\n`;
+            csvContent += `Audience Size,${data.scaled_size || 0}\n`;
+            csvContent += `Active Reach,${data.reach_percentage || 0}%\n`;
+            csvContent += "LiveRamp Matched,45%\n";
+            csvContent += "Google Ads Matched,35%\n";
+            csvContent += "Unmatched Reach,20%\n";
+            
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `audience_sizing_${(data.product_name || 'cohort').replace(/\s+/g, '_')}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
 
         // Initialize Chart.js doughnut
         const ctx = document.getElementById('myChart');
