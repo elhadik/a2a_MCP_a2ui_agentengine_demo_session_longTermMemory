@@ -350,7 +350,7 @@ Once the MCP server is live, the specialist sub-agents (Pricing, Activate, Loyal
 
 ---
 
-#### Step 3: Run the Local Web Application
+#### Step 3: Run the Local Web Application (Development)
 With all remote APIs and sub-agent endpoints successfully deployed and synchronized in your local `.env` file, start the local FastAPI web server:
 
 1. Launch the web application using uvicorn:
@@ -361,7 +361,32 @@ With all remote APIs and sub-agent endpoints successfully deployed and synchroni
 
 ---
 
-### 🧹 Step 4: Maintenance & Utilities
+#### Step 4: Deploy the Web Application to Cloud Run (Production)
+For a fully public, production-grade cloud deployment, you can host the portal server on Google Cloud Run. This compiles the FastAPI application and static HTML frontend into a Docker container and serves it over a public HTTPS URL.
+
+1. **Docker Configuration**: A dedicated [Dockerfile.portal](file:///usr/local/google/home/elhadik/Circana_POC/Dockerfile.portal) defines the runtime environment, dependencies, path variables, and launches the uvicorn worker exposing port `8080`.
+2. **Source Optimization**: Ensure [.gcloudignore](file:///usr/local/google/home/elhadik/Circana_POC/.gcloudignore) is configured in your project root to exclude local virtual environments (`.venv/`) and media folders (`architecture/`) from the build context. This reduces source upload size from 400MB+ to under 2MB.
+3. **Execution Command**: Since Google Cloud Run source builds expect the build spec to be named `Dockerfile` in the root folder, temporarily back up the MCP server Dockerfile and deploy:
+   ```bash
+   # 1. Backup original MCP Dockerfile & copy portal config
+   mv Dockerfile Dockerfile.mcp
+   cp Dockerfile.portal Dockerfile
+
+   # 2. Deploy to Cloud Run (automatically builds & registers container)
+   gcloud run deploy circana-portal \
+     --source . \
+     --region us-central1 \
+     --project shade-sandbox \
+     --allow-unauthenticated
+
+   # 3. Restore original MCP Dockerfile
+   mv Dockerfile.mcp Dockerfile
+   ```
+   *This command uploads the source assets, triggers a container build on Google Cloud Build, registers it in Artifact Registry, deploys the Cloud Run service, and outputs the public HTTPS Service URL (e.g. `https://circana-portal-943928157761.us-central1.run.app`).*
+
+---
+
+### 🧹 Step 5: Maintenance & Utilities
 *   **Decoy/Stale Engine Cleanup**: To avoid resource leaks and clean up old/orphaned reasoning engine deployments:
     ```bash
     python scripts/delete_unused_engines.py
