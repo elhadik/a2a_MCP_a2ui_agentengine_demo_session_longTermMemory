@@ -259,6 +259,18 @@ All session telemetries, tool executions, and safety screenings are logged nativ
 
 ---
 
+### E. Stateful Sessions & Playground Testing
+The Gemini Enterprise Agent Engine maintains conversational state natively across multi-turn interactions. Developers can monitor active sessions and inspect complete step-by-step chat logs and tool invocations:
+* **Sessions Registry**: Active conversation sessions are tracked per reasoning engine:
+
+  ![Agent Engine Sessions Registry](architecture/screenshots/agent_engine_sessions.png)
+
+* **Playground Trace Inspection**: Complete interaction histories, tool calls, and state transitions can be audited in the Agent Playground:
+
+  ![Agent Engine Playground Trace](architecture/screenshots/agent_engine_playground.png)
+
+---
+
 ## 6. Setup & Deployment Guide from Scratch
 
 This guide walks through deploying the entire Multi-Agent platform and MCP tool ecosystem from scratch on Google Cloud Platform.
