@@ -16,7 +16,7 @@ Explore the E2E user flow of the Multi-Agent Portal, showing session initializat
 
 The application is built on the **Gemini Enterprise Agent Engine**, implementing a secure, stateful multi-agent hierarchy governed by Model Armor and integrated with custom tools via the Model Context Protocol (MCP):
 
-![Circana Multi-Agent System Architecture](architecture/screenshots/system_architecture_v5.png)
+![Circana Multi-Agent System Architecture](architecture/screenshots/system_architecture_googley.png)
 
 ### Core Architecture Components
 
