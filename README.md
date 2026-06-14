@@ -30,6 +30,7 @@ The application is built on the **Gemini Enterprise Agent Engine**, implementing
 8.  **Sessions & Memory Bank:** Manages session state preservation across chat turns. Integrates short-term session memory for conversation context with the **Gemini Enterprise Memory Bank** to extract and recall long-term user preferences and campaign history across browser reloads.
 9.  **Agent Observability & Cloud Logging:** Emits execution telemetry, network latency, token consumption, and safety violations directly to **GCP Cloud Logging** to enable full tracing of A2A calls and tool usage per transaction step.
 10. **Agent Identity (SPIFFE ID):** Native GCP IAM security protocol assigning cryptographically-attested SPIFFE IDs to each sub-agent for fine-grained authorization and auditing.
+11. **Antigravity AI Coding Assistant:** Partner companion tool used to accelerate developer workspace setups, automatically packaging files, writing diagnostic tools, and configuring safety pipelines using project-level Agent Skills.
 
 ---
 
