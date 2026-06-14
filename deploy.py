@@ -125,6 +125,7 @@ def main():
             "gcs_dir_name": dep['display_name'],
             "requirements": requirements,
             "extra_packages": extra_packages,
+            "identity_type": "AGENT_IDENTITY",
             "env_vars": {
                 "NUM_WORKERS": "1",
                 "GOOGLE_GENAI_USE_VERTEXAI": "true",
