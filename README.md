@@ -101,7 +101,7 @@ sequenceDiagram
 *   **Official Citation:** 
     > *"Vertex AI Model Armor helps protect your generative AI models by scanning inputs and outputs for prompt injections, jailbreaks, PII, and unsafe content."* — [Google Cloud Vertex AI Model Armor Documentation](https://cloud.google.com/vertex-ai/generative-ai/docs/model-armor)
 *   **Live Proof-of-Safety (Prompt Injection Blocked):**
-    ![Model Armor Blocked Prompt](architecture/screenshots/model_armor_prompt_block_v2.png)
+    ![Model Armor Blocked Prompt](architecture/screenshots/safety_guardrail_block.png)
 
 ### 🗃️ Agent Registry & MCP tool registry
 *   **Definition:** The centralized catalog in Gemini Enterprise Agent Engine where custom tools, endpoints, and Model Context Protocol (MCP) servers are registered, authorized, and made discoverable.
@@ -189,6 +189,13 @@ Clicking **Select Cohort** on the widget triggers a Human-in-the-Loop callback. 
 Upon selecting the channels (LiveRamp, Google Customer Match) and clicking **Activate**, the agent runs the export tool and writes success events back to the session logger:
 
 ![Sync Confirmation Success](architecture/screenshots/web_final_success.png)
+
+---
+
+### Step D: File Attachments & Multi-Modal Input
+Marketers can stage external data files (e.g. `invoice.txt` promo reports) directly from their workspace. Files are securely uploaded to Google Cloud Storage (GCS) staging buckets, and visual chips with delete controls are rendered dynamically in the chat console before task execution:
+
+![Staged File Attachment Input Badge](architecture/screenshots/uploader_chip_staging.png)
 
 ---
 
