@@ -347,6 +347,33 @@ With all remote APIs and sub-agent endpoints successfully deployed and synchroni
     ```bash
     python scripts/delete_unused_engines.py
     ```
-```
-This utility fetches all active reasoning engine deployments, matches them against the current IDs declared in your `.env` configuration, and rate-limits the deletion of any unreferenced/orphaned engines in the GCP project.
+    *This utility fetches all active reasoning engine deployments, matches them against the current IDs declared in your `.env` configuration, and rate-limits the deletion of any unreferenced/orphaned engines in the GCP project.*
+
+---
+
+## 7. AI Agent Skills & Vibe Coding
+
+To enable rapid iteration and "vibe coding" with AI assistants (such as **Antigravity**), this repository exposes project-specific instructions under the `skills/` folder:
+
+*   **[a2a-multi-agent-orchestration](file:///usr/local/google/home/elhadik/Circana_POC/skills/a2a-multi-agent-orchestration/SKILL.md)**: Guides the construction of supervisor-specialist multi-agent execution graphs.
+*   **[agent-identity-setup](file:///usr/local/google/home/elhadik/Circana_POC/skills/agent-identity-setup/SKILL.md)**: Guides configuring native `AGENT_IDENTITY` for Reasoning Engines to secure access using SPIFFE cryptographic IDs.
+*   **[model-armor-integration](file:///usr/local/google/home/elhadik/Circana_POC/skills/model-armor-integration/SKILL.md)**: Guides implementing safety shields (Jailbreaks and PII redaction) inside Agent Runtime hooks.
+
+### How AI Coding Agents Consume Skills
+When pair-programming, AI agents like Antigravity parse the `SKILL.md` documents to understand local engineering conventions, API configurations, and deployment routines. This eliminates the need for the user to manually explain architecture patterns or write boilerplate instructions, accelerating feature development.
+
+---
+
+## 🤖 Google Antigravity Overview & Installation
+
+**Google Antigravity** is a next-generation AI coding assistant designed to pair-program on local codebases. It reads your project structure, executes diagnostic commands, edits files, and automates builds directly from your terminal or IDE.
+
+### 📥 How to Install
+*   **CLI Companion Installation**:
+    ```bash
+    npm install -g @google/antigravity-cli
+    ```
+*   **IDE Extension**:
+    Search for **Antigravity** in the Google Internal Extensions Marketplace or VS Code Extensions panel to enable inline code completion and sidebar agent chat workspace bindings.
+
 
