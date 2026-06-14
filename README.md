@@ -385,6 +385,9 @@ Once the MCP server is live, the specialist sub-agents (Pricing, Activate, Loyal
    ```
    *This script packages the local agent modules (under the `circana_pilot_agent` namespace), bundles dependencies (like `a2a-sdk` and `google-genai`), serializes the agent graphs, uploads them to your GCS staging bucket, creates Vertex AI Reasoning Engine resources, and automatically updates your local `.env` file with the new resource URLs (`PRICING_AGENT_URL`, `ACTIVATE_AGENT_URL`, `LOYALTY_AGENT_URL`).*
 
+   > [!IMPORTANT]
+   > **Packaging Directory Structure**: The `circana_pilot_agent` directory contains the sub-agent definitions, tools, and the `examples/` subdirectory. Packaging the entire `circana_pilot_agent` folder as an `extra_package` guarantees that relative file resource queries (like searching for A2UI schemas in `examples/0.8`) resolve correctly inside the cloud reasoning container.
+
 ---
 
 #### Step 3: Run the Local Web Application
