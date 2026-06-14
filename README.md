@@ -236,6 +236,10 @@ graph TD
 | **LiquidActivateOrchestrator** | specialist agent coordinating cohort audience sizing and activation exports. | `projects/943928157761/locations/us-central1/reasoningEngines/3977143014630883328` | Audience sizing, LiveRamp/Google Customer Match sync. |
 | **LoyaltyCampaignOrchestrator** | specialist agent customizing personalization parameters and reward launches. | `projects/943928157761/locations/us-central1/reasoningEngines/4675200956873310208` | Campaign personalization, loyalty rewards activation. |
 
+> [!IMPORTANT]
+> **Stateful Context Memory**: In the local development runner, session state is managed via `InMemoryMemoryService`. 
+> While this works for single-process local debugging, deploying sub-agents to multi-worker or cloud environments requires migrating to **Firestore-based memory (`FirestoreMemoryService`)** to prevent containers from losing conversation context ("amnesia") between successive user prompts.
+
 ---
 
 ## 4. E2E Execution Flow & Interactive Dashboards
