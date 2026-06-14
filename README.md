@@ -174,7 +174,7 @@ graph TD
 ### Step A: Identify Pricing Opportunities
 The supervisor delegates the initial query to the **Pricing Agent**, which queries historical store attrition data and projects an interactive product selection table into the browser canvas:
 
-![Initial Product Select Table](architecture/screenshots/web_pricing_table.png)
+![Initial Product Select Table](architecture/screenshots/web_pricing_table_v2.png)
 
 ---
 
