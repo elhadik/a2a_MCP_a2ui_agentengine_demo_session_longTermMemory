@@ -181,14 +181,14 @@ The supervisor delegates the initial query to the **Pricing Agent**, which queri
 ### Step B: Audience Sizing Dashboard
 Clicking **Select Cohort** on the widget triggers a Human-in-the-Loop callback. The supervisor invokes the **Activation Agent**, which executes tools on the registered `circana-mcp-server` Cloud Run instance. Sizing counts and activation channel selections are rendered on a polished dashboard card:
 
-![Interactive Cohort Sizing Dashboard](architecture/screenshots/sizing_dashboard_verified.png)
+![Interactive Cohort Sizing Dashboard](architecture/screenshots/sizing_dashboard_verified_v2.png)
 
 ---
 
 ### Step C: Export Sync Confirmation
 Upon selecting the channels (LiveRamp, Google Customer Match) and clicking **Activate**, the agent runs the export tool and writes success events back to the session logger:
 
-![Sync Confirmation Success](architecture/screenshots/web_final_success.png)
+![Sync Confirmation Success](architecture/screenshots/web_final_success_v2.png)
 
 ---
 
