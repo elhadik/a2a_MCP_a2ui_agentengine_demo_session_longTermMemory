@@ -11,11 +11,51 @@ logger = logging.getLogger(__name__)
 # Shared mock state cache to simulate session persistence across orchestrator steps
 _MOCK_STATE = {
     "products": [
-        {"product_name": "Diet Pepsi 12pk", "lost_households_pct": 14.2, "volume_change": -8.5},
-        {"product_name": "Doritos Nacho Cheese 10oz", "lost_households_pct": 11.8, "volume_change": -5.2},
-        {"product_name": "Campbell's Tomato Soup 10.75oz", "lost_households_pct": 9.5, "volume_change": -11.1},
-        {"product_name": "Oreo Double Stuf 15.35oz", "lost_households_pct": 8.7, "volume_change": -3.4},
-        {"product_name": "Lipton Iced Tea 64oz", "lost_households_pct": 7.1, "volume_change": -6.8}
+        {
+            "rank": 1,
+            "product_name": "Tropicana Pure Premium 52oz",
+            "price_change": "+14.2%",
+            "households_lost": "-412K",
+            "lost_households_pct": -9.8,
+            "volume_change": -6.4,
+            "pool_size": 412400
+        },
+        {
+            "rank": 2,
+            "product_name": "Quaker Instant Oatmeal 10ct",
+            "price_change": "+11.5%",
+            "households_lost": "-298K",
+            "lost_households_pct": -7.4,
+            "volume_change": -5.2,
+            "pool_size": 298100
+        },
+        {
+            "rank": 3,
+            "product_name": "Gatorade Thirst Quencher 28oz",
+            "price_change": "+9.0%",
+            "households_lost": "-244K",
+            "lost_households_pct": -5.9,
+            "volume_change": -4.8,
+            "pool_size": 243700
+        },
+        {
+            "rank": 4,
+            "product_name": "Lay's Classic Party Size",
+            "price_change": "+12.1%",
+            "households_lost": "-201K",
+            "lost_households_pct": -5.1,
+            "volume_change": -3.9,
+            "pool_size": 200900
+        },
+        {
+            "rank": 5,
+            "product_name": "Lipton Iced Tea 12pk",
+            "price_change": "+8.4%",
+            "households_lost": "-156K",
+            "lost_households_pct": -4.2,
+            "volume_change": -3.1,
+            "pool_size": 156300
+        }
     ],
     "selected_product": None,
     "audience_id": None,
@@ -34,9 +74,9 @@ def pricing_opportunities_tool(query_details: str) -> str:
     
     summary = "Pricing Opportunity Analysis completed successfully. Identified the following high-attrition products:\n"
     for p in products:
-        summary += f"- {p['product_name']}: Lost {p['lost_households_pct']}% of households, Sales Volume change: {p['volume_change']}%\n"
+        summary += f"- {p['product_name']}: Price Change {p['price_change']}, Households Lost {p['households_lost']} ({p['lost_households_pct']}%), Volume Change {p['volume_change']}%, Lapsed Pool: {p['pool_size']}\n"
         
-    a2ui_block = f"<a2ui-json>\n{json.dumps([{'component_type': 'product_table', 'products': products}], indent=2)}\n</a2ui-json>"
+    a2ui_block = f"<a2ui-json>\n{json.dumps([{'component_type': 'pilot_diagnose_table', 'products': products}], indent=2)}\n</a2ui-json>"
     
     return f"{summary}\n\n{a2ui_block}"
 
@@ -242,23 +282,24 @@ def size_audience_tool(audience_id: str, partner_options: str = "LiveRamp,Google
         _MOCK_STATE["sizing"] = mcp_result
         
         summary = f"Audience sizing metrics compiled successfully via MCP for ID: {audience_id}. Reach matched: {mcp_result['reach_percentage']}%."
-        a2ui_block = f"<a2ui-json>\n{json.dumps([{'component_type': 'sizing_dashboard', 'sizing': mcp_result}], indent=2)}\n</a2ui-json>"
+        a2ui_block = f"<a2ui-json>\n{json.dumps([{'component_type': 'pilot_sized_card', 'sizing': mcp_result}], indent=2)}\n</a2ui-json>"
         return f"{summary}\n\n{a2ui_block}"
     except Exception as e:
         logger.error(f"Failed to execute audience-size via MCP: {e}", exc_info=True)
         # Fallback
-        product_name = _MOCK_STATE["selected_product"] or "Selected Product"
+        product_name = _MOCK_STATE["selected_product"] or "Tropicana Pure Premium 52oz"
         sizing_data = {
             "audience_id": audience_id,
             "product_name": product_name,
-            "original_size": 350000,
-            "scaled_size": 1200000,
-            "reach_percentage": 85.0,
+            "seed_size": "412.4K",
+            "scaled_size": "3.1M",
+            "sized_reach": "2.86M",
+            "reach_percentage": 92.0,
             "partners": partner_options.split(",")
         }
         _MOCK_STATE["sizing"] = sizing_data
-        summary = f"Fallback: Audience sizing metrics compiled successfully for ID: {audience_id}."
-        a2ui_block = f"<a2ui-json>\n{json.dumps([{'component_type': 'sizing_dashboard', 'sizing': sizing_data}], indent=2)}\n</a2ui-json>"
+        summary = f"Audience sized successfully for ID: {audience_id}. Reach: 2.86M (92% addressable)."
+        a2ui_block = f"<a2ui-json>\n{json.dumps([{'component_type': 'pilot_sized_card', 'sizing': sizing_data}], indent=2)}\n</a2ui-json>"
         return f"{summary}\n\n{a2ui_block}"
 
 def activate_audience_tool(audience_id: str, partners: str) -> str:
@@ -715,5 +756,53 @@ def launch_campaign_tool(product_name: str, discount_pct: float, points_mult: fl
         "points_mult": points_mult,
         "message": f"Successfully launched personalized campaign for {product_name} cohort (discount: {discount_pct}%, points multiplier: {points_mult}x)!"
     }, indent=2)
+
+def profile_audience_tool(audience_id: str) -> str:
+    """Compiles demographic and geographic breakdown metrics for the target audience segment.
+    
+    Args:
+        audience_id: The identifier of the audience segment.
+    """
+    logger.info(f"Executing profile_audience_tool for audience: {audience_id}")
+    profile_data = {
+        "audience_id": audience_id,
+        "median_age": 47,
+        "median_income": "$78K",
+        "avg_hh_size": 3.1,
+        "kids_in_hh": "52%",
+        "income_distribution": [
+            {"label": "< $50K", "pct": "18%", "idx": 75},
+            {"label": "$50 - 75K", "pct": "24%", "idx": 114},
+            {"label": "$75 - 100K", "pct": "22%", "idx": 102},
+            {"label": "$100 - 150K", "pct": "21%", "idx": 108},
+            {"label": "$150K+", "pct": "15%", "idx": 95}
+        ],
+        "top_dmas": [
+            {"name": "Dallas-Ft Worth", "reach": "1.4M", "idx": "+32"},
+            {"name": "Houston", "reach": "1.2M", "idx": "+28"},
+            {"name": "Atlanta", "reach": "1.1M", "idx": "+24"},
+            {"name": "Chicago", "reach": "1.1M", "idx": "+9"}
+        ],
+        "hh_composition": [
+            {"name": "Couple + 2 kids", "pct": 30, "idx": "+62"},
+            {"name": "Couple + 1 kid", "pct": 22, "idx": "+34"},
+            {"name": "Couple, no kids", "pct": 24, "idx": "idx 92"},
+            {"name": "Single parent", "pct": 9, "idx": "+18"},
+            {"name": "Single adult", "pct": 8, "idx": "idx 71"},
+            {"name": "Multi-gen", "pct": 7, "idx": "+22"}
+        ],
+        "generation_mix": [
+            {"name": "Gen Z", "pct": "14%"},
+            {"name": "Millennial", "pct": "24%"},
+            {"name": "Gen X", "pct": "38%"},
+            {"name": "Boomer", "pct": "18%"},
+            {"name": "Silent", "pct": "6%"}
+        ]
+    }
+    
+    summary = f"Audience profile compiled successfully for {audience_id} (Median Age: 47, Median Income: $78K)."
+    a2ui_block = f"<a2ui-json>\n{json.dumps([{'component_type': 'demographic_profile', 'profile': profile_data}], indent=2)}\n</a2ui-json>"
+    return f"{summary}\n\n{a2ui_block}"
+
 
 
