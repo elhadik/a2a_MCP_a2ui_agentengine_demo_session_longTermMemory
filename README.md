@@ -369,10 +369,9 @@ For a fully public, production-grade cloud deployment, you can host the portal s
 
 1. **Docker Configuration**: A dedicated [Dockerfile.portal](file:///usr/local/google/home/elhadik/Circana_POC/Dockerfile.portal) defines the runtime environment, dependencies, path variables, and launches the uvicorn worker exposing port `8080`.
 2. **Source Optimization**: Ensure [.gcloudignore](file:///usr/local/google/home/elhadik/Circana_POC/.gcloudignore) is configured in your project root to exclude local virtual environments (`.venv/`) and media folders (`architecture/`) from the build context. This reduces source upload size from 400MB+ to under 2MB.
-3. **Execution Command**: Since Google Cloud Run source builds expect the build spec to be named `Dockerfile` in the root folder, temporarily back up the MCP server Dockerfile and deploy:
+3. **Execution Command**: Since Google Cloud Run source builds expect the build spec to be named `Dockerfile` in the root folder, temporarily copy the portal Dockerfile and deploy:
    ```bash
-   # 1. Backup original MCP Dockerfile & copy portal config
-   mv Dockerfile Dockerfile.mcp
+   # 1. Copy portal config to temporary Dockerfile
    cp Dockerfile.portal Dockerfile
 
    # 2. Deploy to Cloud Run (automatically builds & registers container)
@@ -382,8 +381,8 @@ For a fully public, production-grade cloud deployment, you can host the portal s
      --project shade-sandbox \
      --allow-unauthenticated
 
-   # 3. Restore original MCP Dockerfile
-   mv Dockerfile.mcp Dockerfile
+   # 3. Clean up the temporary Dockerfile
+   rm Dockerfile
    ```
    *This command uploads the source assets, triggers a container build on Google Cloud Build, registers it in Artifact Registry, deploys the Cloud Run service, and outputs the public HTTPS Service URL (e.g. `https://circana-portal-943928157761.us-central1.run.app`).*
 
