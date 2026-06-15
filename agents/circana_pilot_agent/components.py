@@ -585,7 +585,6 @@ DEMOGRAPHIC_PROFILE_HTML_TEMPLATE = r"""<!DOCTYPE html>
 </body>
 </html>
 """
-"""
 
 class UIBuilder:
     @staticmethod
@@ -648,6 +647,36 @@ class UIBuilder:
             }
         }
 
+    @staticmethod
+    def build_demographic_profile(surface_id: str, profile_data: dict) -> dict:
+        """Compiles A2UI payload for audience demographic profile dashboard."""
+        injected_script = f"<script>window.INJECTED_DATA = {json.dumps(profile_data)};</script>"
+        html_injected = DEMOGRAPHIC_PROFILE_HTML_TEMPLATE.replace("</head>", f"{injected_script}\n</head>")
+
+        return {
+            "surfaceUpdate": {
+                "surfaceId": surface_id,
+                "components": [
+                    {
+                        "id": "root",
+                        "component": {
+                            "WebFrameSrcdoc": {
+                                "htmlContent": { "literalString": html_injected }
+                            }
+                        }
+                    }
+                ]
+            },
+            "dataModelUpdate": {
+                "surfaceId": surface_id,
+                "contents": []
+            },
+            "beginRendering": {
+                "surfaceId": surface_id,
+                "root": "root"
+            }
+        }
+
 def get_product_table_a2ui(products: list) -> str:
     ui = UIBuilder.build_product_table("circana-pricing-table", products)
     sequence = [ui["surfaceUpdate"], ui["dataModelUpdate"], ui["beginRendering"]]
@@ -655,6 +684,11 @@ def get_product_table_a2ui(products: list) -> str:
 
 def get_sizing_dashboard_a2ui(sizing: dict) -> str:
     ui = UIBuilder.build_sizing_dashboard("circana-sizing-dashboard", sizing)
+    sequence = [ui["surfaceUpdate"], ui["dataModelUpdate"], ui["beginRendering"]]
+    return f"<a2ui-json>\n{json.dumps(sequence, indent=2)}\n</a2ui-json>"
+
+def get_demographic_profile_a2ui(profile: dict) -> str:
+    ui = UIBuilder.build_demographic_profile("circana-demographic-profile", profile)
     sequence = [ui["surfaceUpdate"], ui["dataModelUpdate"], ui["beginRendering"]]
     return f"<a2ui-json>\n{json.dumps(sequence, indent=2)}\n</a2ui-json>"
 

@@ -2,9 +2,9 @@ import json
 import logging
 
 try:
-    from .components import get_product_table_a2ui, get_sizing_dashboard_a2ui
+    from .components import get_product_table_a2ui, get_sizing_dashboard_a2ui, get_demographic_profile_a2ui
 except ImportError:
-    from components import get_product_table_a2ui, get_sizing_dashboard_a2ui
+    from components import get_product_table_a2ui, get_sizing_dashboard_a2ui, get_demographic_profile_a2ui
 
 logger = logging.getLogger(__name__)
 
@@ -660,6 +660,13 @@ async def send_message_tool(agent_name: str, task_summary: str, tool_context: To
                 full_json_str = full_a2ui_str.replace("<a2ui-json>", "").replace("</a2ui-json>", "").strip()
                 return json.loads(full_json_str)
                 
+            # 5. Demographic Profile Match
+            if comp_type == "demographic_profile" or "median_age" in str(payload):
+                profile_data = payload.get("profile") or payload
+                full_a2ui_str = get_demographic_profile_a2ui(profile_data)
+                full_json_str = full_a2ui_str.replace("<a2ui-json>", "").replace("</a2ui-json>", "").strip()
+                return json.loads(full_json_str)
+
             return [payload]
 
         text_parts = []
