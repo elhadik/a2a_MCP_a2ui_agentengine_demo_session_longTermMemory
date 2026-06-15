@@ -186,7 +186,15 @@ class CircanaPilotExecutor(AgentExecutor):
                             discount = payload.get("discount_pct", "10")
                             multiplier = payload.get("points_mult", "2")
                             user_input_text = f'Action received: launch personalized loyalty rewards campaign for cohort: "{product}" with discount: {discount}% and points multiplier: {multiplier}x.'
-                            logger.info(f"Translated btn_launch_campaign action to query: {user_input_text}")
+                        elif action_id == "confirm_size":
+                            user_input_text = "Yes, size it for activation."
+                            logger.info(f"Translated confirm_size action to query: {user_input_text}")
+                        elif action_id == "request_profile":
+                            user_input_text = "Compile demographic breakdown and audience profile for this segment."
+                            logger.info(f"Translated request_profile action to query: {user_input_text}")
+                        elif action_id == "do_activate":
+                            user_input_text = "Activate the audience"
+                            logger.info(f"Translated do_activate action to query: {user_input_text}")
                     except Exception as action_err:
                         logger.error(f"Error parsing interactive action payload: {action_err}")
 

@@ -43,6 +43,29 @@ def handle_list_tools():
                     },
                     "required": ["job_id"]
                 }
+            },
+            {
+                "name": "audience-profile",
+                "description": "Compiles demographic breakdown metrics for the target audience segment.",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "audience_id": {"type": "string", "description": "The identifier of the audience segment."}
+                    },
+                    "required": ["audience_id"]
+                }
+            },
+            {
+                "name": "audience-activate",
+                "description": "Validates compliance gates and activates the target audience segment across channels.",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "audience_id": {"type": "string", "description": "The identifier of the audience segment."},
+                        "partners": {"type": "string", "description": "Comma-separated target channels."}
+                    },
+                    "required": ["audience_id"]
+                }
             }
         ]
     }
