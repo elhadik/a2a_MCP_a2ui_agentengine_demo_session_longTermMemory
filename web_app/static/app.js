@@ -18,6 +18,7 @@ const btnAttach = document.getElementById('btn-attach');
 const btnMic = document.getElementById('btn-mic');
 const fileInput = document.getElementById('file-upload-input');
 const stagedFilesArea = document.getElementById('staged-files-area');
+const voiceWaves = document.getElementById('voice-waves');
 let stagedFiles = [];
 
 function updateSandboxVisibility() {
@@ -592,22 +593,66 @@ if (btnMic && ('webkitSpeechRecognition' in window || 'SpeechRecognition' in win
     
     recognition.onerror = (event) => {
         console.error("Speech recognition error:", event.error);
+        voiceWaves.classList.add('hidden');
     };
     
     recognition.onend = () => {
         isRecording = false;
         btnMic.classList.remove('recording');
+        voiceWaves.classList.add('hidden');
         userInput.placeholder = "Ask the coordinator a question or command...";
+        
+        // Auto-send the transcribed text if present
+        const text = userInput.value.trim();
+        if (text) {
+            submitUserMessage(text);
+        }
     };
 
-    btnMic.addEventListener('click', () => {
-        if (!recognition) return;
-        if (isRecording) {
-            recognition.stop();
-        } else {
+    const startRecording = () => {
+        if (!recognition || isRecording) return;
+        userInput.value = "";
+        
+        // Position waves overlay directly over the user-input element
+        const rect = userInput.getBoundingClientRect();
+        const parentRect = userInput.parentElement.getBoundingClientRect();
+        voiceWaves.style.left = `${rect.left - parentRect.left}px`;
+        voiceWaves.style.width = `${rect.width}px`;
+        voiceWaves.style.top = `${rect.top - parentRect.top}px`;
+        voiceWaves.style.height = `${rect.height}px`;
+        voiceWaves.classList.remove('hidden');
+
+        try {
             recognition.start();
+        } catch (e) {
+            console.error("Speech recognition start failed:", e);
+            voiceWaves.classList.add('hidden');
         }
+    };
+
+    const stopRecording = () => {
+        if (!recognition || !isRecording) return;
+        try {
+            recognition.stop();
+        } catch (e) {
+            console.error("Speech recognition stop failed:", e);
+        }
+    };
+
+    // Bind mousedown and touchstart to start recording (press-and-hold)
+    btnMic.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        startRecording();
     });
+    btnMic.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        startRecording();
+    });
+
+    // Bind mouseup, mouseleave, and touchend to stop recording (release)
+    btnMic.addEventListener('mouseup', stopRecording);
+    btnMic.addEventListener('mouseleave', stopRecording);
+    btnMic.addEventListener('touchend', stopRecording);
 } else if (btnMic) {
     btnMic.style.display = 'none';
 }

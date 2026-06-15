@@ -934,3 +934,49 @@ body {
     width: 20px;
     height: 20px;
 }
+
+/* Voice Waveforms Animation */
+.voice-waves-overlay {
+    position: absolute;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    background: #f7f5fa;
+    border: 1px solid var(--border-color);
+    border-radius: 24px;
+    z-index: 10;
+    pointer-events: none;
+    box-sizing: border-box;
+    padding: 0 20px;
+    transition: all 0.2s ease;
+}
+
+.voice-waves-overlay.hidden {
+    display: none !important;
+}
+
+.wave-bar {
+    width: 3px;
+    height: 100%;
+    min-height: 4px;
+    background: var(--accent-primary);
+    border-radius: 2px;
+    animation: wave-pulse 1.2s ease-in-out infinite;
+    transform-origin: center;
+}
+
+.wave-bar:nth-child(1) { animation-delay: 0.1s; height: 10px; background-color: #4285f4; } /* Google Blue */
+.wave-bar:nth-child(2) { animation-delay: 0.3s; height: 18px; background-color: #ea4335; } /* Google Red */
+.wave-bar:nth-child(3) { animation-delay: 0.0s; height: 14px; background-color: #fbbc05; } /* Google Yellow */
+.wave-bar:nth-child(4) { animation-delay: 0.4s; height: 22px; background-color: #34a853; } /* Google Green */
+.wave-bar:nth-child(5) { animation-delay: 0.2s; height: 12px; background-color: #4285f4; }
+
+@keyframes wave-pulse {
+    0%, 100% {
+        transform: scaleY(0.3);
+    }
+    50% {
+        transform: scaleY(1.1);
+    }
+}

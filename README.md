@@ -2,6 +2,9 @@
 
 The **Retail Multi-Agent Orchestration Hub** is a premium, state-of-the-art pilot portal demonstrating a conversational AI interface coupled with an interactive sandbox canvas. The system coordinates retail pricing analytics, cohort construction, audience sizing, and marketing activations across a hybrid multi-agent network.
 
+> [!TIP]
+> **🚀 Live Web Portal URL**: [https://circana-portal-943928157761.us-central1.run.app](https://circana-portal-943928157761.us-central1.run.app)
+
 ---
 
 ## 🎥 Web Application Demo Walkthrough
