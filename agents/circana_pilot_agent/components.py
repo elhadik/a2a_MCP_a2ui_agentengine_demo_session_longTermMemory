@@ -293,277 +293,298 @@ SIZING_DASHBOARD_HTML_TEMPLATE = r"""<!DOCTYPE html>
     <meta content='connect-src "none"' http-equiv='Content-Security-Policy'>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <title>Audience Sizing & Activation</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
-            --bg-color: #f8fafc;
-            --card-bg: #ffffff;
-            --text-primary: #0f172a;
-            --text-secondary: #475569;
-            --accent-primary: #002f6c;
-            --accent-secondary: #00a4e4;
-            --border-color: #e2e8f0;
-            --success: #10b981;
-            --warning: #f59e0b;
+            --bg-color: #ffffff;
+            --border: #e2e8f0;
+            --t1: #0f172a;
+            --t2: #475569;
+            --t3: #64748b;
+            --primary: #2563eb;
+            --green: #10b981;
+            --hover: #f8fafc;
         }
         body {
             font-family: 'Poppins', system-ui, -apple-system, sans-serif;
             background-color: var(--bg-color);
-            color: var(--text-primary);
+            color: var(--t1);
             margin: 0;
-            padding: 12px;
+            padding: 8px;
             box-sizing: border-box;
             font-size: 13px;
         }
-        .header {
-            margin-bottom: 12px;
-            border-bottom: 1px solid var(--border-color);
-            padding-bottom: 6px;
+        .panel {
+            background: #ffffff;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 16px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
         }
-        .header h1 {
-            font-size: 1.1rem;
-            font-weight: 700;
-            margin: 0;
-            background: linear-gradient(to right, var(--accent-primary), var(--accent-secondary));
-            -webkit-background-clip: text;
-            background-clip: text;
-            -webkit-text-fill-color: transparent;
+        .panel-lead {
+            font-size: 13.5px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: var(--t1);
         }
-        .header p {
-            color: var(--text-secondary);
-            margin: 2px 0 0 0;
-            font-size: 0.75rem;
-        }
-        .kpi-container {
+        .kpi-row {
             display: flex;
-            gap: 8px;
-            margin-bottom: 12px;
+            gap: 12px;
+            margin-bottom: 16px;
         }
-        .kpi-card {
-            background-color: var(--card-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 10px;
+        .kpi {
             flex: 1;
+            background: #f8fafc;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 14px;
         }
-        .kpi-title {
-            font-size: 0.65rem;
+        .kpi-label {
+            font-size: 10px;
             text-transform: uppercase;
-            color: var(--text-secondary);
+            color: var(--t3);
+            font-weight: 700;
             letter-spacing: 0.05em;
         }
         .kpi-value {
-            font-size: 1.25rem;
+            font-size: 22px;
             font-weight: 700;
-            margin: 4px 0;
-            color: var(--accent-primary);
+            color: var(--t1);
+            margin: 6px 0 4px;
         }
-        .kpi-value.success {
-            color: var(--success);
+        .kpi-value.det { color: #002f6c; }
+        .kpi-value.prob { color: #ff6f00; }
+        .kpi-value.total { color: var(--green); }
+        .kpi-sub {
+            font-size: 11px;
+            color: var(--t3);
         }
-        .panel {
-            background-color: var(--card-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 12px;
-            margin-bottom: 12px;
-        }
-        .panel-title {
-            font-weight: 700;
-            color: var(--text-secondary);
-            font-size: 0.78rem;
-            text-transform: uppercase;
-            margin-bottom: 8px;
-        }
-        .checkbox-group {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            margin-bottom: 12px;
-        }
-        .checkbox-item {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            cursor: pointer;
-        }
-        .btn-activate {
-            width: 100%;
-            background: linear-gradient(135deg, var(--success), #059669);
-            color: #ffffff;
-            border: none;
-            padding: 8px;
-            border-radius: 6px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: opacity 0.2s;
-            text-align: center;
-        }
-        .btn-activate:hover {
-            opacity: 0.9;
+        .panel-line {
+            color: var(--t2);
+            font-size: 12px;
+            line-height: 1.5;
+            margin-top: 12px;
         }
         .btn-download {
             background: transparent;
-            border: 1px solid var(--accent-secondary);
-            color: var(--accent-primary);
+            border: 1px solid #00a4e4;
+            color: #002f6c;
             padding: 5px 10px;
             border-radius: 6px;
-            font-size: 0.72rem;
+            font-size: 11px;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.2s;
         }
         .btn-download:hover {
-            background-color: var(--accent-secondary);
+            background-color: #00a4e4;
             color: #ffffff;
         }
+        .chip-row {
+            display: flex;
+            gap: 8px;
+            margin-top: 16px;
+        }
+        .btn-activate {
+            background: linear-gradient(135deg, var(--primary), #1d4ed8);
+            color: #ffffff;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 11.5px;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        .btn-activate:hover { opacity: 0.9; }
     </style>
 </head>
 <body>
-    <div class="header" style="display: flex; justify-content: space-between; align-items: center;">
-        <div>
-            <h1>Audience Dashboard</h1>
-            <p id="product-context">Cohort details for selected product</p>
-        </div>
-        <button class="btn-download" onclick="downloadCSV()">Download CSV</button>
-    </div>
-
-    <div class="kpi-container">
-        <div class="kpi-card">
-            <div class="kpi-title">Audience Size</div>
-            <div class="kpi-value" id="val-size">0</div>
-        </div>
-        <div class="kpi-card">
-            <div class="kpi-title">Active Reach</div>
-            <div class="kpi-value success" id="val-reach">0%</div>
-        </div>
-    </div>
-
     <div class="panel">
-        <div class="panel-title">Target Reach Distribution</div>
-        <div class="chart-container" style="position: relative; height: 180px; margin: 10px 0;">
-            <canvas id="myChart"></canvas>
-            <div id="svg-fallback" style="display:none; height:100%; align-items:center; justify-content:center;">
-                <!-- SVG fallback donut segment -->
-                <svg width="120" height="120" viewBox="0 0 42 42" class="donut">
-                    <circle class="donut-hole" cx="21" cy="21" r="15.91549430918954" fill="#ffffff"></circle>
-                    <circle class="donut-ring" cx="21" cy="21" r="15.91549430918954" fill="transparent" stroke="#e2e8f0" stroke-width="4"></circle>
-                    <circle class="donut-segment" cx="21" cy="21" r="15.91549430918954" fill="transparent" stroke="#002f6c" stroke-width="4" stroke-dasharray="45 55" stroke-dashoffset="25"></circle>
-                    <circle class="donut-segment" cx="21" cy="21" r="15.91549430918954" fill="transparent" stroke="#00a4e4" stroke-width="4" stroke-dasharray="35 65" stroke-dashoffset="80"></circle>
-                </svg>
-            </div>
+        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+            <div class="panel-lead">All set — your audience is built, scaled, and sized.</div>
+            <button class="btn-download" onclick="downloadCSV()">Download CSV</button>
         </div>
-    </div>
-
-    <div class="panel">
-        <div class="panel-title">Activation Channels</div>
-        <div class="checkbox-group">
-            <label class="checkbox-item">
-                <input type="checkbox" name="partner" value="LiveRamp" checked> LiveRamp Identity Link
-            </label>
-            <label class="checkbox-item">
-                <input type="checkbox" name="partner" value="Google" checked> Google Customer Match
-            </label>
-            <label class="checkbox-item">
-                <input type="checkbox" name="partner" value="TheTradeDesk"> The Trade Desk Unified ID
-            </label>
+        <div class="kpi-row cols-3" id="kpis">
+            <!-- Dynamically populated sizing cards -->
         </div>
-        <button class="btn-activate" id="btn-submit">Activate Audience Segment</button>
+        <div class="panel-line" id="panel-desc">
+            From one question to an audience that’s ready to go: verified lapsed households expanded with ProScore lookalikes.
+        </div>
+        <div class="chip-row">
+            <button class="btn-activate" onclick="activatePartner('LiveRamp')">Activate LiveRamp</button>
+            <button class="btn-activate" onclick="activatePartner('Google Ads')">Activate Google DV360</button>
+            <button class="btn-activate" onclick="activatePartner('Meta Ads')">Activate Meta Ads</button>
+        </div>
     </div>
 
     <script>
         const data = window.INJECTED_DATA || {};
-        document.getElementById('product-context').textContent = `Cohort details for product: ${data.product_name || 'Selected Cohort'}`;
-        document.getElementById('val-size').textContent = (data.scaled_size || 0).toLocaleString();
-        document.getElementById('val-reach').textContent = `${data.reach_percentage || 0}%`;
+        const pName = data.product_name || "Tropicana Pure Premium 52oz";
+        const seedCount = data.seed_count || 412400;
+        const scaledCount = data.scaled_size || "3.1M";
+        const reachCount = data.reach_count || "2.86M";
 
-        // Cache Key & Local Storage Loading
-        const cacheKey = `sizing_partners_${data.product_name || 'default'}`;
-        const cached = localStorage.getItem(cacheKey);
-        if (cached) {
-            const checkedPartners = JSON.parse(cached);
-            document.querySelectorAll("input[name='partner']").forEach(cb => {
-                cb.checked = checkedPartners.includes(cb.value);
-            });
-        }
+        document.getElementById('kpis').innerHTML = `
+            <div class="kpi"><div class="kpi-label">Built · verified seed</div><div class="kpi-value det">${(seedCount/1000).toFixed(1)}<small>K</small></div><div class="kpi-sub">lapsed ${pName} HH</div></div>
+            <div class="kpi"><div class="kpi-label">Scaled · Complete</div><div class="kpi-value prob">${scaledCount}</div><div class="kpi-sub">ProScore lookalikes</div></div>
+            <div class="kpi"><div class="kpi-label">Sized · addressable reach</div><div class="kpi-value total">${reachCount}</div><div class="kpi-sub">ready to activate</div></div>
+        `;
 
-        // Save State Listener
-        document.querySelectorAll("input[name='partner']").forEach(cb => {
-            cb.addEventListener('change', () => {
-                const checkedBoxes = document.querySelectorAll("input[name='partner']:checked");
-                const partners = Array.from(checkedBoxes).map(cb => cb.value);
-                localStorage.setItem(cacheKey, JSON.stringify(partners));
-            });
-        });
+        document.getElementById('panel-desc').innerHTML = `From one question to an audience that’s ready to go: <b>${seedCount.toLocaleString()}</b> verified lapsed ${pName} households, expanded to <b>${scaledCount}</b> with ProScore, with <b>${reachCount}</b> reachable for activation. Pick a destination and we’re off.`;
 
         function downloadCSV() {
             let csvContent = "data:text/csv;charset=utf-8,";
             csvContent += "Metric,Value\n";
-            csvContent += `Product,"${data.product_name || 'Selected Cohort'}"\n`;
-            csvContent += `Audience Size,${data.scaled_size || 0}\n`;
-            csvContent += `Active Reach,${data.reach_percentage || 0}%\n`;
-            csvContent += "LiveRamp Matched,45%\n";
-            csvContent += "Google Ads Matched,35%\n";
-            csvContent += "Unmatched Reach,20%\n";
-            
+            csvContent += `Product,"${pName}"\n`;
+            csvContent += `Verified Seed,${seedCount}\n`;
+            csvContent += `Scaled Audience,${scaledCount}\n`;
+            csvContent += `Addressable Reach,${reachCount}\n`;
             const encodedUri = encodeURI(csvContent);
             const link = document.createElement("a");
             link.setAttribute("href", encodedUri);
-            link.setAttribute("download", `audience_sizing_${(data.product_name || 'cohort').replace(/\s+/g, '_')}.csv`);
+            link.setAttribute("download", `audience_reach_${pName.replace(/\s+/g, '_')}.csv`);
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
         }
 
-        // Initialize Chart.js doughnut
-        const ctx = document.getElementById('myChart');
-        if (typeof Chart !== 'undefined') {
-            new Chart(ctx, {
-                type: 'doughnut',
-                data: {
-                    labels: ['LiveRamp Matched', 'Google Ads Matched', 'Unmatched Reach'],
-                    datasets: [{
-                        data: [45, 35, 20],
-                        backgroundColor: ['#002f6c', '#00a4e4', '#cbd5e1'],
-                        borderWidth: 1,
-                        borderColor: '#ffffff'
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            position: 'bottom',
-                            labels: {
-                                boxWidth: 10,
-                                font: { size: 9, family: 'Poppins' },
-                                color: '#475569'
-                            }
-                        }
-                    },
-                    cutout: '70%'
-                }
-            });
-        } else {
-            document.getElementById('myChart').style.display = 'none';
-            document.getElementById('svg-fallback').style.display = 'flex';
-        }
-
-        document.getElementById('btn-submit').onclick = () => {
-            const checkedBoxes = document.querySelectorAll("input[name='partner']:checked");
-            const partners = Array.from(checkedBoxes).map(cb => cb.value);
-            
-            // Post activation request callback back to supervisor
+        function activatePartner(partner) {
             window.parent.postMessage({
                 type: 'USER_ACTION',
                 actionId: 'btn_activate',
-                payload: { partners: partners }
+                payload: { partners: [partner] }
             }, '*');
-        };
+        }
     </script>
 </body>
 </html>
+"""
+
+EXECUTION_CHAIN_HTML_TEMPLATE = r"""<!DOCTYPE html>
+<html lang='en'>
+<head>
+    <meta charset='UTF-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <title>Execution Pipeline</title>
+    <style>
+        :root {
+            --bg-color: #ffffff;
+            --border: #e2e8f0;
+            --t1: #0f172a;
+            --t3: #64748b;
+            --primary: #2563eb;
+            --green: #10b981;
+        }
+        body {
+            font-family: 'Poppins', system-ui, sans-serif;
+            margin: 0; padding: 12px;
+        }
+        .chain-box {
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 16px;
+            background: #f8fafc;
+        }
+        .chain-lead {
+            font-size: 13px; font-weight: 700; color: var(--t1);
+            margin-bottom: 16px;
+        }
+        .chain-row {
+            display: flex; align-items: center; gap: 12px;
+        }
+        .chain-step {
+            flex: 1; background: #fff;
+            border: 2px solid var(--border);
+            border-radius: 8px; padding: 12px;
+            text-align: center;
+        }
+        .chain-step.ok { border-color: var(--green); }
+        .chain-step.on { border-color: var(--primary); }
+        .chain-name { font-weight: 700; font-size: 12px; color: var(--t1); }
+        .chain-sub { font-size: 10.5px; color: var(--t3); margin-top: 4px; }
+    </style>
+</head>
+<body>
+    <div class="chain-box">
+        <div class="chain-lead">Here’s how I’ll get this done — three steps handing results straight to the next.</div>
+        <div class="chain-row">
+            <div class="chain-step ok">
+                <div class="chain-name">1 · Build</div>
+                <div class="chain-sub">verified lapsed-buyer audience</div>
+            </div>
+            <div style="color:var(--t3);font-weight:700">→</div>
+            <div class="chain-step ok">
+                <div class="chain-name">2 · Scale</div>
+                <div class="chain-sub">ProScore expansion</div>
+            </div>
+            <div style="color:var(--t3);font-weight:700">→</div>
+            <div class="chain-step on">
+                <div class="chain-name">3 · Size</div>
+                <div class="chain-sub">addressable reach</div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+"""
+
+DEMOGRAPHIC_PROFILE_HTML_TEMPLATE = r"""<!DOCTYPE html>
+<html lang='en'>
+<head>
+    <meta charset='UTF-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <title>Demographic Profile</title>
+    <style>
+        body {
+            font-family: 'Poppins', system-ui, sans-serif;
+            margin: 0; padding: 12px;
+            color: #0f172a; background: #ffffff;
+            font-size: 12.5px;
+        }
+        .panel {
+            border: 1px solid #e2e8f0;
+            border-radius: 10px; padding: 16px;
+        }
+        .dp-title { font-weight: 700; font-size: 14px; margin-bottom: 12px; }
+        .stat-strip {
+            display: flex; gap: 12px; margin-bottom: 20px;
+        }
+        .stat-card {
+            flex: 1; background: #f8fafc; border: 1px solid #e2e8f0;
+            border-radius: 8px; padding: 12px;
+        }
+        .stat-label { font-size: 10px; text-transform: uppercase; color: #64748b; font-weight: 700; }
+        .stat-num { font-size: 22px; font-weight: 700; margin: 4px 0; color: #0f172a; }
+        .dp-bar-row {
+            display: flex; align-items: center; gap: 12px; margin-bottom: 8px;
+        }
+        .dp-lbl { width: 100px; font-weight: 500; font-size: 11.5px; }
+        .dp-track { flex: 1; background: #f1f5f9; height: 16px; border-radius: 8px; overflow: hidden; }
+        .dp-fill { background: #ff6f00; height: 100%; }
+        .dp-pct { width: 40px; text-align: right; font-weight: 600; }
+    </style>
+</head>
+<body>
+    <div class="panel">
+        <div class="dp-title">Audience Profile · 3.1M Households</div>
+        <div class="stat-strip">
+            <div class="stat-card"><div class="stat-label">Median Age</div><div class="stat-num">47 yrs</div></div>
+            <div class="stat-card"><div class="stat-label">Median Income</div><div class="stat-num">$78K</div></div>
+            <div class="stat-card"><div class="stat-label">Avg HH Size</div><div class="stat-num">3.1</div></div>
+            <div class="stat-card"><div class="stat-label">Kids in HH</div><div class="stat-num">52%</div></div>
+        </div>
+        <div class="dp-title" style="margin-top:16px;">Household Income Distribution</div>
+        <div class="dp-bar-row"><div class="dp-lbl">&lt; $50K</div><div class="dp-track"><div class="dp-fill" style="width:18%;background:#94a3b8"></div></div><div class="dp-pct">18%</div></div>
+        <div class="dp-bar-row"><div class="dp-lbl">$50 – 75K</div><div class="dp-track"><div class="dp-fill" style="width:38%"></div></div><div class="dp-pct">24%</div></div>
+        <div class="dp-bar-row"><div class="dp-lbl">$75 – 100K</div><div class="dp-track"><div class="dp-fill" style="width:30%"></div></div><div class="dp-pct">22%</div></div>
+        <div class="dp-bar-row"><div class="dp-lbl">$100 – 150K</div><div class="dp-track"><div class="dp-fill" style="width:28%"></div></div><div class="dp-pct">21%</div></div>
+        <div class="dp-bar-row"><div class="dp-lbl">$150K+</div><div class="dp-track"><div class="dp-fill" style="width:15%;background:#94a3b8"></div></div><div class="dp-pct">15%</div></div>
+    </div>
+</body>
+</html>
+"""
 """
 
 class UIBuilder:
