@@ -25,3 +25,6 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Temporary build containers
+Dockerfile
