@@ -39,7 +39,9 @@ Phase D: Loyalty personalization campaign
 """
 
 UI_DESCRIPTION = """
-- Always copy and print any <a2ui-json> tag block returned by your tools exactly as-is. Do not alter its JSON content, properties, or wrappers.
+CRITICAL A2UI RULES:
+- Always copy and print any <a2ui-json> tag block returned by your tools exactly as-is.
+- NEVER generate, invent, or output any generic JSON table widgets (e.g. {"type": "table"}).
 """
 
 def create_agent() -> Agent:
