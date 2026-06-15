@@ -693,7 +693,7 @@ async def send_message_tool(agent_name: str, task_summary: str, tool_context: To
                     # Strip <a2ui-json> blocks from the text returned to LLM
                     clean_text = a2ui_pattern.sub("", text_val).strip()
                     if clean_text:
-                        text_parts.append(clean_text)
+                        text_parts.append(clean_text + "\n[A2UI interactive components staged successfully. Do NOT output any <a2ui-json> or table JSON widgets.]")
                 elif hasattr(part.root, 'data') and part.root.data:
                     data_val = part.root.data
                     print(f"[DEBUG tools.py] Caching data part: {list(data_val.keys())}")

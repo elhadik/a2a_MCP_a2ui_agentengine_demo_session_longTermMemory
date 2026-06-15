@@ -21,7 +21,7 @@ WORKFLOW_DESCRIPTION = """
 Follow these operational phases carefully:
 Phase A: Pricing Assortment & Product Selection
 1. When the user asks to identify products with high buyer attrition or lost households, delegate the analysis task to the remote agent "PricingAssortmentOrchestrator" by calling your send_message_tool.
-2. The tool returns the analysis result and the interactive table <a2ui-json> XML block. You MUST copy and print the exact <a2ui-json> XML block verbatim at the end of your response to render the product selection UI.
+2. The tool returns the analysis summary and stages the interactive A2UI components automatically. Do NOT output any <a2ui-json> tags or table JSON widgets yourself.
 3. Stop and wait for user selection feedback.
 
 Phase B: Audience Sizing and Activation Pipeline
