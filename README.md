@@ -190,42 +190,32 @@ graph TD
 
 ## 4. E2E Execution Flow & Interactive Dashboards
 
-### Step A: Identify Pricing Opportunities
-The supervisor delegates the initial query to the **Pricing Agent**, which queries historical store attrition data and projects an interactive product selection table into the browser canvas:
+This walkthrough illustrates an interactive session across the supervisor and three specialized sub-agents, demonstrating how conversational requests translate into native A2UI data models.
 
-![Initial Product Select Table](architecture/screenshots/pricing_table_step_a_final.png)
+### Step A: Category Pricing & Attrition Analysis (`Pricing Agent`)
+*   **Agent Functionality**: Identifies category pricing opportunities, calculates lost households, and ranks product attrition where price increases drove volume loss.
+*   **User Request**: `"Identify pricing opportunities with shopper attrition in the Soft Drinks category."`
+*   **Agent Response & Action**: The `PricingAssortmentOrchestrator` queries historical store attrition data and projects an interactive product selection table into the browser canvas:
 
----
-
-### Step B: Asynchronous Query Polling & GUI Lock
-To prevent HTTP timeouts and browser hangs during long-running database queries, selecting a product cohort triggers an asynchronous MCP database job. The MCP tool immediately yields a unique `job_id` and initial `status: "Running"`. 
-
-The client UI instantly locks all inputs (text fields, speech recognition mic, attachment buttons, and send controls) and initiates a background polling loop against `GET /api/jobs/{job_id}`. Real-time progression checklists are rendered dynamically in the chat timeline, updating stakeholders on query progress:
-
-![Asynchronous DB Query Polling & Lock](architecture/screenshots/async_polling_progress.png)
-
-Once progress reaches 100%, the interface automatically unlocks, appends the completed cohort segment ID to the context, and proceeds to the sizing dashboard.
+![Initial Product Select Table](architecture/screenshots/demo_pricing_table.png)
 
 ---
 
-### Step C: Audience Sizing Dashboard
-Once the background job completes, the supervisor invokes the **Activation Agent**, which executes tools on the registered `circana-mcp-server` Cloud Run instance. Sizing counts and activation channel selections are rendered on a polished dashboard card:
+### Step B: Audience Definition & Cohort Sizing (`Activate Agent`)
+*   **Agent Functionality**: Constructs behavioral lookalikes (ProScore expansion) and sizes addressable households across destination ad platforms (LiveRamp, Google Customer Match).
+*   **User Request**: Selecting the `"Tropicana Pure Premium 52oz"` product row.
+*   **Agent Response & Action**: The `LiquidActivateOrchestrator` expands the deterministic seed (412.4K) to 3.1M lookalikes and sizes addressable match reach at **2.86 Million Households**.
 
-![Interactive Cohort Sizing Dashboard](architecture/screenshots/sizing_dashboard_step_b_final.png)
-
----
-
-### Step D: Export Sync Confirmation
-Upon selecting the channels (LiveRamp, Google Customer Match) and clicking **Activate**, the agent runs the export tool and writes success events back to the session logger:
-
-![Sync Confirmation Success](architecture/screenshots/sync_confirmation_step_c_final.png)
+![Interactive Cohort Sizing Dashboard](architecture/screenshots/demo_audience_sizing.png)
 
 ---
 
-### Step E: File Attachments & Multi-Modal Input
-Marketers can stage external data files (e.g. `invoice.txt` promo reports) directly from their workspace. Files are securely uploaded to Google Cloud Storage (GCS) staging buckets, and visual chips with delete controls are rendered dynamically in the chat console before task execution:
+### Step C: Demographic Profiling & Geography (`Profile Agent`)
+*   **Agent Functionality**: Compiles demographic breakdowns, DMA concentration heatmaps, household composition, and generational distributions.
+*   **User Request**: Clicking `"View Demographic Profile"` / `"Profile it"`.
+*   **Agent Response & Action**: The `AudienceProfileAgent` renders a comprehensive demographic dashboard highlighting Middle-Income concentration ($50-75K Index 114) and Southern DMA clusters (Dallas-Ft Worth +32 Index).
 
-![Staged File Attachment Input Badge](architecture/screenshots/uploader_chip_staging.png)
+![Profile Agent Screen](architecture/screenshots/demo_demographic_profile.png)
 
 ---
 
@@ -437,39 +427,5 @@ When pair-programming, AI agents like Antigravity parse the `SKILL.md` documents
     ```
 *   **IDE Extension**:
     Search for **Antigravity** in the Google Internal Extensions Marketplace or VS Code Extensions panel to enable inline code completion and sidebar agent chat workspace bindings.
-
----
-
-## 🌟 Multi-Agent Action Walkthrough & Screen Gallery
-
-This walkthrough illustrates an interactive session across the supervisor and three specialized sub-agents, demonstrating how conversational requests translate into native A2UI data models.
-
-### Phase 1: Category Pricing & Attrition Analysis (`Pricing Agent`)
-
-*   **Agent Functionality**: Identifies category pricing opportunities, calculates lost households, and ranks product attrition where price increases drove volume loss.
-*   **User Request**: `"Identify pricing opportunities with shopper attrition in the Soft Drinks category."`
-*   **Agent Response & Action**: The `PricingAssortmentOrchestrator` queries the database via `pricing_opportunities_tool` and renders an interactive A2UI Pricing Table highlighting lost households (-412K) for Tropicana.
-
-![Pricing Agent Screen](architecture/screenshots/demo_pricing_table.png)
-
----
-
-### Phase 2: Audience Definition & Cohort Sizing (`Activate Agent`)
-
-*   **Agent Functionality**: Constructs behavioral lookalikes (ProScore expansion) and sizes addressable households across destination ad platforms (LiveRamp, Google Customer Match).
-*   **User Request**: Selecting the `"Tropicana Pure Premium 52oz"` product row.
-*   **Agent Response & Action**: The `LiquidActivateOrchestrator` expands the deterministic seed (412.4K) to 3.1M lookalikes and sizes addressable match reach at **2.86 Million Households**.
-
-![Activate Agent Screen](architecture/screenshots/demo_audience_sizing.png)
-
----
-
-### Phase 3: Demographic Profiling & Geography (`Profile Agent`)
-
-*   **Agent Functionality**: Compiles demographic breakdowns, DMA concentration heatmaps, household composition, and generational distributions.
-*   **User Request**: Clicking `"View Demographic Profile"` / `"Profile it"`.
-*   **Agent Response & Action**: The `AudienceProfileAgent` renders a comprehensive demographic dashboard highlighting Middle-Income concentration ($50-75K Index 114) and Southern DMA clusters (Dallas-Ft Worth +32 Index).
-
-![Profile Agent Screen](architecture/screenshots/demo_demographic_profile.png)
 
 
