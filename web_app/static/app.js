@@ -216,6 +216,15 @@ function renderA2UIWidget(widget) {
     card.appendChild(header);
     card.appendChild(iframeContainer);
     
+    // Auto-collapse older widgets
+    const oldWidgets = sandboxContent.querySelectorAll('.widget-card');
+    oldWidgets.forEach(w => {
+        const c = w.querySelector('.iframe-container');
+        const t = w.querySelector('.widget-card-header span:last-child');
+        if (c) c.style.display = 'none';
+        if (t) t.textContent = '▶';
+    });
+    
     // Append to top of sandbox list before setting srcdoc
     sandboxContent.insertBefore(card, sandboxContent.firstChild);
     

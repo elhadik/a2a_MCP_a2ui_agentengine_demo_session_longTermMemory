@@ -188,9 +188,10 @@ class CircanaPilotExecutor(AgentExecutor):
                             user_input_text = f'Action received: launch personalized loyalty rewards campaign for cohort: "{product}" with discount: {discount}% and points multiplier: {multiplier}x.'
                         elif action_id in ("confirm_size", "size_audience"):
                             aud_id = payload.get("audience_id", "AUD-TROPICANA-PURE-PREMIUM-52OZ-999")
-                            user_input_text = f"Yes, size the audience {aud_id} for activation."
+                            recap = payload.get("recap", "")
+                            user_input_text = f"Yes, size the audience {aud_id} for activation. {recap}".strip()
                             logger.info(f"Translated confirm_size action to query: {user_input_text}")
-                        elif action_id == "request_profile":
+                        elif action_id in ("request_profile", "profile_audience"):
                             user_input_text = "Compile demographic breakdown and audience profile for this segment."
                             logger.info(f"Translated request_profile action to query: {user_input_text}")
                         elif action_id == "do_activate":

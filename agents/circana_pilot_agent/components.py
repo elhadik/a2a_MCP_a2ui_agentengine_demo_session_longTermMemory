@@ -418,9 +418,7 @@ SIZING_DASHBOARD_HTML_TEMPLATE = r"""<!DOCTYPE html>
       <div class="followup-label">Recommended next steps</div>
       <div class="chip-row">
         <button class="chip go-chip" onclick="activatePartner('LiveRamp,Google')">🚀 Activate</button>
-        <button class="chip" onclick="selectDestinations()">Select destinations</button>
-        <button class="chip" onclick="refineDefinition()">Refine the definition</button>
-        <button class="chip" onclick="makeEdits()">Make edits</button>
+        <button class="chip" onclick="profileAudience()">Profile it</button>
       </div>
     </div>
   </div>
@@ -444,14 +442,8 @@ SIZING_DASHBOARD_HTML_TEMPLATE = r"""<!DOCTYPE html>
         payload: { partners: partners.split(',') }
       }, '*');
     }
-    function selectDestinations() {
-      window.parent.postMessage({ type: 'USER_ACTION', actionId: 'select_destinations', payload: {} }, '*');
-    }
-    function refineDefinition() {
-      window.parent.postMessage({ type: 'USER_ACTION', actionId: 'refine_definition', payload: {} }, '*');
-    }
-    function makeEdits() {
-      window.parent.postMessage({ type: 'USER_ACTION', actionId: 'make_edits', payload: {} }, '*');
+    function profileAudience() {
+      window.parent.postMessage({ type: 'USER_ACTION', actionId: 'profile_audience', payload: {} }, '*');
     }
   </script>
 </body>
@@ -934,39 +926,39 @@ COMBINED_ACTIVATION_HTML_TEMPLATE = r"""<!DOCTYPE html>
       <div class="aud-tile-body">
         <div class="aud-grp">
           <div class="aud-grp-label">Type</div>
-          <div class="aud-pills"><span class="pill type">Verified · Lapsed Buyers</span></div>
+          <div class="aud-pills"><span class="pill type" id="pType" onclick="editPill('pType', 'Type')">Verified · Lapsed Buyers</span></div>
         </div>
         <div class="aud-grp">
           <div class="aud-grp-label">Scope (Product)</div>
           <div class="aud-pills">
-            <span class="pill scope-product" id="pScope">Tropicana Pure Premium</span>
-            <button class="pill-add">+</button>
+            <span class="pill scope-product" id="pScope" onclick="editPill('pScope', 'Scope (Product)')">Tropicana Pure Premium</span>
+            <button class="pill-add" onclick="editPill('pScope', 'Scope (Product)')">+</button>
           </div>
         </div>
         <div class="aud-grp">
           <div class="aud-grp-label">Scope (Time)</div>
           <div class="aud-pills">
-            <span class="pill scope-time">Prior 12 weeks</span>
-            <button class="pill-add">+</button>
+            <span class="pill scope-time" id="pTime" onclick="editPill('pTime', 'Scope (Time)')">Prior 12 weeks</span>
+            <button class="pill-add" onclick="editPill('pTime', 'Scope (Time)')">+</button>
           </div>
         </div>
         <div class="aud-grp">
           <div class="aud-grp-label">Measures</div>
           <div class="aud-pills">
-            <button class="pill missing">Add a measure</button>
+            <button class="pill missing" id="pMeasure" onclick="editPill('pMeasure', 'Measures')">Add a measure</button>
           </div>
         </div>
         <div class="aud-grp">
           <div class="aud-grp-label">Attributes</div>
           <div class="aud-pills">
-            <span class="pill attribute">Price-sensitive</span>
-            <button class="pill-add">+</button>
+            <span class="pill attribute" id="pAttr" onclick="editPill('pAttr', 'Attributes')">Price-sensitive</span>
+            <button class="pill-add" onclick="editPill('pAttr', 'Attributes')">+</button>
           </div>
         </div>
         <div class="aud-grp">
           <div class="aud-grp-label">Destinations</div>
           <div class="aud-pills">
-            <button class="pill-add danger">+</button>
+            <button class="pill-add danger" id="pDest" onclick="editPill('pDest', 'Destinations')">+</button>
           </div>
         </div>
         <div class="aud-result-strip">
@@ -1031,11 +1023,33 @@ COMBINED_ACTIVATION_HTML_TEMPLATE = r"""<!DOCTYPE html>
       if (pricing) pricing.forEach(d => d.removeAttribute('open'));
     } catch(e) {}
 
+    function editPill(id, label) {
+      const el = document.getElementById(id);
+      const curr = el ? el.textContent : '';
+      const updated = prompt(`Edit ${label}:`, curr);
+      if (updated && el) {
+        el.textContent = updated;
+      }
+    }
+
     function sizeAudience() {
+      const prod = document.getElementById('pScope') ? document.getElementById('pScope').textContent : 'Tropicana Pure Premium';
+      const time = document.getElementById('pTime') ? document.getElementById('pTime').textContent : 'Prior 12 weeks';
+      const meas = document.getElementById('pMeasure') ? document.getElementById('pMeasure').textContent : 'Add a measure';
+      const attr = document.getElementById('pAttr') ? document.getElementById('pAttr').textContent : 'Price-sensitive';
+      const dest = document.getElementById('pDest') ? document.getElementById('pDest').textContent : '+';
+
       window.parent.postMessage({
         type: 'USER_ACTION',
         actionId: 'size_audience',
-        payload: {}
+        payload: {
+          recap: `Audience [${prod}], Time [${time}], Measures [${meas}], Attr [${attr}], Dest [${dest}]`,
+          product_name: prod,
+          time_scope: time,
+          measures: meas,
+          attributes: attr,
+          destinations: dest
+        }
       }, '*');
     }
   </script>
