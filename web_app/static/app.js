@@ -163,20 +163,45 @@ function renderA2UIWidget(widget) {
     
     const header = document.createElement('div');
     header.className = 'widget-card-header';
+    header.style.cursor = 'pointer';
+    
+    const headerLeft = document.createElement('div');
+    headerLeft.style.display = 'flex';
+    headerLeft.style.alignItems = 'center';
+    headerLeft.style.gap = '8px';
+    
+    const twistie = document.createElement('span');
+    twistie.className = 'widget-twistie';
+    twistie.textContent = '▼';
+    twistie.style.fontSize = '10px';
+    twistie.style.color = 'var(--text-primary)';
     
     const title = document.createElement('span');
     title.className = 'widget-title';
     title.textContent = surfaceId.replace(/-/g, ' ').toUpperCase();
     
+    headerLeft.appendChild(twistie);
+    headerLeft.appendChild(title);
+    
     const badge = document.createElement('span');
     badge.className = 'widget-badge';
     badge.textContent = 'interactive';
     
-    header.appendChild(title);
+    header.appendChild(headerLeft);
     header.appendChild(badge);
     
     const iframeContainer = document.createElement('div');
     iframeContainer.className = 'iframe-container';
+    
+    header.onclick = () => {
+        if (iframeContainer.style.display === 'none') {
+            iframeContainer.style.display = 'block';
+            twistie.textContent = '▼';
+        } else {
+            iframeContainer.style.display = 'none';
+            twistie.textContent = '▶';
+        }
+    };
     
     const iframe = document.createElement('iframe');
     iframe.scrolling = 'no';

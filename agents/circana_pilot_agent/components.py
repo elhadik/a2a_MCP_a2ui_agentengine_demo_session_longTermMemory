@@ -162,10 +162,6 @@ PRODUCT_TABLE_HTML_TEMPLATE = r"""<!DOCTYPE html>
     </style>
 </head>
 <body>
-    <details id="pricing-details" open>
-        <summary style="cursor: pointer; outline: none; font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; padding: 6px 0; border-bottom: 1px solid #e2e8f0; margin-bottom: 12px;">
-            Circana Pricing Table · Attrition Analysis (Click to toggle)
-        </summary>
         <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px;">
             <div class="panel-lead" style="margin-bottom: 0;">Here’s what I found — five products where price increases drove household attrition over the past 12 weeks.</div>
             <button class="btn-download" onclick="downloadCSV()">Download CSV</button>
@@ -284,11 +280,7 @@ PRODUCT_TABLE_HTML_TEMPLATE = r"""<!DOCTYPE html>
 
             tbody.appendChild(tr);
         });
-        if (window.COLLAPSE_TABLE) {
-            document.getElementById('pricing-details').removeAttribute('open');
-        }
     </script>
-    </details>
 </body>
 </html>
 """
@@ -626,18 +618,18 @@ COMBINED_ACTIVATION_HTML_TEMPLATE = r"""<!DOCTYPE html>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: 'Inter', sans-serif;
-      background: var(--bg);
+      background: transparent;
       color: var(--t1);
       font-size: 13px;
       line-height: 1.5;
-      padding: 16px;
+      padding: 4px;
     }
     .wrapper {
       display: flex;
       flex-direction: column;
       gap: 20px;
-      max-width: 960px;
-      margin: 0 auto;
+      width: 100%;
+      max-width: 100%;
     }
 
     /* 1. Chain Tracker */
