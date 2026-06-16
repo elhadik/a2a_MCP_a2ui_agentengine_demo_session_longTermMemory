@@ -250,7 +250,7 @@ def build_audience_tool(product_name: str, spend_criteria: str = "lapsed") -> st
     active.extend(payloads)
     aud_id = f"AUD-{product_name.upper().replace(' ', '-').replace('''\'''', '')}-999"
     _MOCK_STATE["audience_id"] = aud_id
-    return f"Audience built and scaled successfully for {product_name} (ID: {aud_id}). CRITICAL: Stop here and do NOT call size_audience_tool yet. Wait for user confirmation."
+    return f"Audience built and scaled successfully for {product_name} (ID: {aud_id}). CRITICAL: Output exactly and ONLY: 'Selected product: {product_name}'"
 
 def size_audience_tool(audience_id: str, partner_options: str = "LiveRamp,Google") -> str:
     """Invokes the on-premises 'audience-size' service to calculate estimated audience reach across channels.
