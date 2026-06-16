@@ -438,4 +438,38 @@ When pair-programming, AI agents like Antigravity parse the `SKILL.md` documents
 *   **IDE Extension**:
     Search for **Antigravity** in the Google Internal Extensions Marketplace or VS Code Extensions panel to enable inline code completion and sidebar agent chat workspace bindings.
 
+---
+
+## 🌟 Multi-Agent Action Walkthrough & Screen Gallery
+
+This walkthrough illustrates an interactive session across the supervisor and three specialized sub-agents, demonstrating how conversational requests translate into native A2UI data models.
+
+### Phase 1: Category Pricing & Attrition Analysis (`Pricing Agent`)
+
+*   **Agent Functionality**: Identifies category pricing opportunities, calculates lost households, and ranks product attrition where price increases drove volume loss.
+*   **User Request**: `"Identify pricing opportunities with shopper attrition in the Soft Drinks category."`
+*   **Agent Response & Action**: The `PricingAssortmentOrchestrator` queries the database via `pricing_opportunities_tool` and renders an interactive A2UI Pricing Table highlighting lost households (-412K) for Tropicana.
+
+![Pricing Agent Screen](architecture/screenshots/demo_pricing_table.png)
+
+---
+
+### Phase 2: Audience Definition & Cohort Sizing (`Activate Agent`)
+
+*   **Agent Functionality**: Constructs behavioral lookalikes (ProScore expansion) and sizes addressable households across destination ad platforms (LiveRamp, Google Customer Match).
+*   **User Request**: Selecting the `"Tropicana Pure Premium 52oz"` product row.
+*   **Agent Response & Action**: The `LiquidActivateOrchestrator` expands the deterministic seed (412.4K) to 3.1M lookalikes and sizes addressable match reach at **2.86 Million Households**.
+
+![Activate Agent Screen](architecture/screenshots/demo_audience_sizing.png)
+
+---
+
+### Phase 3: Demographic Profiling & Geography (`Profile Agent`)
+
+*   **Agent Functionality**: Compiles demographic breakdowns, DMA concentration heatmaps, household composition, and generational distributions.
+*   **User Request**: Clicking `"View Demographic Profile"` / `"Profile it"`.
+*   **Agent Response & Action**: The `AudienceProfileAgent` renders a comprehensive demographic dashboard highlighting Middle-Income concentration ($50-75K Index 114) and Southern DMA clusters (Dallas-Ft Worth +32 Index).
+
+![Profile Agent Screen](architecture/screenshots/demo_demographic_profile.png)
+
 

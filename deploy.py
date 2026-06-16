@@ -78,8 +78,9 @@ def main():
     from circana_pilot_agent.sub_agents.pricing_assortment_orchestrator import get_agent_card as get_pricing_card
     from circana_pilot_agent.sub_agents.liquid_activate_orchestrator import get_agent_card as get_activate_card
     from circana_pilot_agent.sub_agents.loyalty_campaign_orchestrator import get_agent_card as get_loyalty_card
+    from circana_pilot_agent.sub_agents.profile_agent import get_agent_card as get_profile_card
 
-    from circana_pilot_agent.sub_agents_executors import PricingAssortmentExecutor, LiquidActivateExecutor, LoyaltyCampaignExecutor
+    from circana_pilot_agent.sub_agents_executors import PricingAssortmentExecutor, LiquidActivateExecutor, LoyaltyCampaignExecutor, AudienceProfileExecutor
 
     deployments = [
         {
@@ -102,6 +103,13 @@ def main():
             "executor": LoyaltyCampaignExecutor,
             "card_fn": get_loyalty_card,
             "description": "Specialist orchestrator executing personalized loyalty campaigns."
+        },
+        {
+            "key": "AudienceProfileAgent",
+            "display_name": "audience_profile_agent",
+            "executor": AudienceProfileExecutor,
+            "card_fn": get_profile_card,
+            "description": "Specialist orchestrator compiling demographic distribution and audience profile breakdown."
         }
     ]
 
@@ -143,7 +151,7 @@ def main():
             return dep['key'], None
 
     deployed_endpoints = {}
-    with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
         futures = [executor.submit(deploy_agent, dep) for dep in deployments]
         for future in concurrent.futures.as_completed(futures):
             key, resource_name = future.result()
@@ -165,7 +173,8 @@ def main():
     mapping = {
         "PricingAssortmentOrchestrator": "PRICING_AGENT_URL",
         "LiquidActivateOrchestrator": "ACTIVATE_AGENT_URL",
-        "LoyaltyCampaignOrchestrator": "LOYALTY_AGENT_URL"
+        "LoyaltyCampaignOrchestrator": "LOYALTY_AGENT_URL",
+        "AudienceProfileAgent": "PROFILE_AGENT_URL"
     }
     
     for k, v in deployed_endpoints.items():
