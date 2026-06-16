@@ -493,7 +493,7 @@ async function submitInteractiveAction(action) {
     let userPromptText = "";
     
     if (action.actionId === 'product_selected') {
-        userPromptText = `Selected product: "${action.payload.product}". Sizing the cohort...`;
+        userPromptText = `Selected product: ${action.payload.product}`;
         setIndicator('activate');
     } else if (action.actionId === 'btn_activate') {
         const partners = action.payload.partners ? action.payload.partners.join(', ') : 'None';
