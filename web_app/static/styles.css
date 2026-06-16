@@ -688,8 +688,8 @@ body {
 .iframe-container {
     position: relative;
     width: 100%;
-    /* Standard dashboard height */
-    height: 960px; 
+    min-height: 250px; 
+    transition: height 0.2s ease-out;
     background: var(--bg-color);
 }
 
@@ -697,6 +697,7 @@ body {
     width: 100%;
     height: 100%;
     border: none;
+    overflow: hidden;
 }
 
 /* Typing Loader Dots Animation */

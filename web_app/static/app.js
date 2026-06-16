@@ -180,6 +180,27 @@ function renderA2UIWidget(widget) {
     
     const iframe = document.createElement('iframe');
     iframe.srcdoc = htmlContent;
+    iframe.scrolling = 'no';
+    
+    iframe.onload = () => {
+        try {
+            const win = iframe.contentWindow;
+            const doc = win.document;
+            const syncHeight = () => {
+                const h = doc.documentElement.scrollHeight;
+                if (h > 50) {
+                    iframeContainer.style.height = (h + 36) + 'px';
+                }
+            };
+            syncHeight();
+            if (win.ResizeObserver) {
+                const ro = new win.ResizeObserver(syncHeight);
+                ro.observe(doc.body);
+            }
+        } catch (e) {
+            console.error("Dynamic iframe height sync:", e);
+        }
+    };
     
     iframeContainer.appendChild(iframe);
     card.appendChild(header);
