@@ -193,7 +193,7 @@ function renderA2UIWidget(widget) {
     const iframeContainer = document.createElement('div');
     iframeContainer.className = 'iframe-container';
     
-    const isActivation = htmlContent.includes('aud-tile') || htmlContent.includes('Scaled to a Complete');
+    const isActivation = surfaceId.includes('activation') || htmlContent.includes('aud-tile') || htmlContent.includes('Scaled to a Complete');
     const defaultH = isActivation ? 1250 : 500;
     iframeContainer.style.minHeight = defaultH + 'px';
     iframeContainer.style.height = defaultH + 'px';
