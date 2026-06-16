@@ -19,8 +19,9 @@ os.environ["GOOGLE_CLOUD_LOCATION"] = location
 from circana_pilot_agent.sub_agents.pricing_assortment_orchestrator import get_agent_card as get_pricing_card
 from circana_pilot_agent.sub_agents.liquid_activate_orchestrator import get_agent_card as get_activate_card
 from circana_pilot_agent.sub_agents.loyalty_campaign_orchestrator import get_agent_card as get_loyalty_card
+from circana_pilot_agent.sub_agents.profile_agent import get_agent_card as get_profile_card
 
-from circana_pilot_agent.sub_agents_executors import PricingAssortmentExecutor, LiquidActivateExecutor, LoyaltyCampaignExecutor
+from circana_pilot_agent.sub_agents_executors import PricingAssortmentExecutor, LiquidActivateExecutor, LoyaltyCampaignExecutor, AudienceProfileExecutor
 
 from vertexai.preview.reasoning_engines import A2aAgent
 from a2a.server.apps.rest.fastapi_app import A2ARESTFastAPIApplication
@@ -44,7 +45,7 @@ def create_local_app(executor_builder, card_builder, host, port):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Serve ADK agents locally.")
-    parser.add_argument("--agent", choices=["pricing", "activate", "loyalty"], required=True, help="Agent type to run")
+    parser.add_argument("--agent", choices=["pricing", "activate", "loyalty", "profile"], required=True, help="Agent type to run")
     parser.add_argument("--port", type=int, required=True, help="Port to serve agent on")
     args = parser.parse_args()
     
@@ -55,6 +56,8 @@ if __name__ == "__main__":
         app = create_local_app(LiquidActivateExecutor, get_activate_card, host, args.port)
     elif args.agent == "loyalty":
         app = create_local_app(LoyaltyCampaignExecutor, get_loyalty_card, host, args.port)
+    elif args.agent == "profile":
+        app = create_local_app(AudienceProfileExecutor, get_profile_card, host, args.port)
         
     print(f"================================================================================")
     print(f"Starting local A2A HTTP Server for {args.agent.upper()} on http://{host}:{args.port}")

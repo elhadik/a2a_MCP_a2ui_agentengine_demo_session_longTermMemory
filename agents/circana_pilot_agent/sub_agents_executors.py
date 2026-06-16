@@ -182,3 +182,9 @@ from circana_pilot_agent.sub_agents.loyalty_campaign_orchestrator import loyalty
 class LoyaltyCampaignExecutor(BaseSubAgentExecutor):
     def __init__(self):
         super().__init__(loyalty_campaign_orchestrator, "LoyaltyCampaignAgent")
+
+# AudienceProfileExecutor
+from circana_pilot_agent.sub_agents.profile_agent import profile_agent
+class AudienceProfileExecutor(BaseSubAgentExecutor):
+    def __init__(self):
+        super().__init__(profile_agent, "AudienceProfileAgent")
