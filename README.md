@@ -134,6 +134,19 @@ sequenceDiagram
     > *"Agent Identity provides a strongly attested, SPIFFE-based cryptographic identity for each individual agent... This promotes a least-privilege approach to agent permissions, bounding access tokens to the agent runtime and ensuring non-repudiable auditing of agent actions."* — [Google Cloud Gemini Enterprise Agent Platform Security Guide](https://cloud.google.com/vertex-ai/generative-ai/docs/agent-platform/security)
 
 
+### 🌐 A2UI & Agent Interface Resources
+* **A2UI Specification**: [https://a2ui.org/](https://a2ui.org/)
+* **A2UI GitHub Repository**: [https://github.com/google/A2UI](https://github.com/google/A2UI)
+* **A2UI Blog Post**: [Introducing A2UI: An open project for agent-driven interfaces](https://a2ui.org/)
+* **A2UI Gemini Enterprise Sample**: `A2UI/samples/agent/adk/gemini_enterprise`
+* **Shared A2UI Repositories & Demos**:
+  * [https://github.com/elhadik/a2ui_ge_jira_screensplit](https://github.com/elhadik/a2ui_ge_jira_screensplit)
+  * [https://github.com/elhadik/working_a2ui_poc](https://github.com/elhadik/working_a2ui_poc)
+  * Video Demo: `a2ui_v2_trimmed.mov`
+* **Google Cloud Documentation**: [Register and manage A2A agents](https://cloud.google.com/vertex-ai/generative-ai/docs/agent-registry)
+* **Vega-Lite Specification**: [https://vega.github.io/schema/vega-lite/v5.json](https://vega.github.io/schema/vega-lite/v5.json)
+
+
 ### 👥 Multi-Agent Teamwork Topology & Active Registry
 The system utilizes a hub-and-spoke supervisor pattern. The root supervisor orchestrates the pipeline phases, parses A2UI layout responses, and coordinates state transitions.
 
