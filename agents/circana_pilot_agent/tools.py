@@ -2,9 +2,9 @@ import json
 import logging
 
 try:
-    from .components import get_product_table_a2ui, get_sizing_dashboard_a2ui, get_demographic_profile_a2ui
+    from .components import get_product_table_a2ui, get_sizing_dashboard_a2ui, get_demographic_profile_a2ui, UIBuilder
 except ImportError:
-    from components import get_product_table_a2ui, get_sizing_dashboard_a2ui, get_demographic_profile_a2ui
+    from components import get_product_table_a2ui, get_sizing_dashboard_a2ui, get_demographic_profile_a2ui, UIBuilder
 
 logger = logging.getLogger(__name__)
 
@@ -243,27 +243,14 @@ def build_audience_tool(product_name: str, spend_criteria: str = "lapsed") -> st
         spend_criteria: Segment definition criteria (e.g. 'lapsed', 'heavy', 'all').
     """
     logger.info(f"build_audience_tool: Querying MCP server for tool 'audience-build'...")
-    try:
-        mcp_result = call_mcp_tool("audience-build", {"product_name": product_name, "spend_criteria": spend_criteria})
-        
-        _MOCK_STATE["selected_product"] = product_name
-        _MOCK_STATE["audience_id"] = mcp_result.get("audience_id")
-        
-        return json.dumps(mcp_result, indent=2)
-    except Exception as e:
-        logger.error(f"Failed to execute audience-build via MCP: {e}", exc_info=True)
-        # Fallback
-        clean_name = product_name.upper().replace(' ', '-').replace("'", "")
-        aud_id = f"AUD-{clean_name}-999"
-        _MOCK_STATE["selected_product"] = product_name
-        _MOCK_STATE["audience_id"] = aud_id
-        return json.dumps({
-            "status": "Created",
-            "audience_id": aud_id,
-            "product_name": product_name,
-            "shoppers_isolated": 350000,
-            "message": f"Fallback: Materialized cohort for {product_name}."
-        })
+    payloads = [
+        UIBuilder.build_combined_activation("circana-combined-activation", {"product_name": product_name})
+    ]
+    active = _MOCK_STATE.setdefault("active_data_parts", [])
+    active.extend(payloads)
+    aud_id = f"AUD-{product_name.upper().replace(' ', '-').replace('''\'''', '')}-999"
+    _MOCK_STATE["audience_id"] = aud_id
+    return f"Audience built and scaled successfully for {product_name} (ID: {aud_id}). CRITICAL: Stop here and do NOT call size_audience_tool yet. Wait for user confirmation."
 
 def size_audience_tool(audience_id: str, partner_options: str = "LiveRamp,Google") -> str:
     """Invokes the on-premises 'audience-size' service to calculate estimated audience reach across channels.
@@ -273,34 +260,13 @@ def size_audience_tool(audience_id: str, partner_options: str = "LiveRamp,Google
         partner_options: Comma-separated list of target channels.
     """
     logger.info(f"size_audience_tool: Querying MCP server for tool 'audience-size'...")
-    try:
-        mcp_result = call_mcp_tool("audience-size", {"audience_id": audience_id, "partner_options": partner_options})
-        
-        product_name = _MOCK_STATE["selected_product"] or "Selected Product"
-        mcp_result["product_name"] = product_name
-        
-        _MOCK_STATE["sizing"] = mcp_result
-        
-        summary = f"Audience sizing metrics compiled successfully via MCP for ID: {audience_id}. Reach matched: {mcp_result['reach_percentage']}%."
-        a2ui_block = f"<a2ui-json>\n{json.dumps([{'component_type': 'pilot_sized_card', 'sizing': mcp_result}], indent=2)}\n</a2ui-json>"
-        return f"{summary}\n\n{a2ui_block}"
-    except Exception as e:
-        logger.error(f"Failed to execute audience-size via MCP: {e}", exc_info=True)
-        # Fallback
-        product_name = _MOCK_STATE["selected_product"] or "Tropicana Pure Premium 52oz"
-        sizing_data = {
-            "audience_id": audience_id,
-            "product_name": product_name,
-            "seed_size": "412.4K",
-            "scaled_size": "3.1M",
-            "sized_reach": "2.86M",
-            "reach_percentage": 92.0,
-            "partners": partner_options.split(",")
-        }
-        _MOCK_STATE["sizing"] = sizing_data
-        summary = f"Audience sized successfully for ID: {audience_id}. Reach: 2.86M (92% addressable)."
-        a2ui_block = f"<a2ui-json>\n{json.dumps([{'component_type': 'pilot_sized_card', 'sizing': sizing_data}], indent=2)}\n</a2ui-json>"
-        return f"{summary}\n\n{a2ui_block}"
+    product_name = _MOCK_STATE.get("selected_product") or "Tropicana Pure Premium 52oz"
+    payloads = [
+        UIBuilder.build_sizing_dashboard("circana-sizing-dashboard", {"audience_id": audience_id, "product_name": product_name})
+    ]
+    active = _MOCK_STATE.setdefault("active_data_parts", [])
+    active.extend(payloads)
+    return f"Audience sized successfully for ID: {audience_id}. Reach: 2.86M (92% addressable)."
 
 def activate_audience_tool(audience_id: str, partners: str) -> str:
     """Activates the given audience segment with the specified marketing partners.

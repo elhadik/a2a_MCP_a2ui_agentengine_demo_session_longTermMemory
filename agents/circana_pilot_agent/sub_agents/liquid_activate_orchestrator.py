@@ -3,20 +3,16 @@ from google.adk.agents import Agent
 from google.adk.tools import FunctionTool
 
 try:
-    from ..tools import send_message_tool, activate_audience_tool, profile_audience_tool
+    from ..tools import build_audience_tool, size_audience_tool, activate_audience_tool, profile_audience_tool
 except (ImportError, ValueError):
-    from tools import send_message_tool, activate_audience_tool, profile_audience_tool
+    from tools import build_audience_tool, size_audience_tool, activate_audience_tool, profile_audience_tool
 
 ROLE_DESCRIPTION = (
     "You are the Circana Liquid Activate Orchestrator. Your job is to coordinate audience construction, scaling, and sizing. "
-    "To handle user queries, execute this sequential plan using your send_message_tool:\n"
-    "1. Delegate to 'SemanticLayerAgent' with the user request to resolve the target product entity (e.g. 'Diet Pepsi 12pk') from conversation memory.\n"
-    "2. Delegate to 'AudienceBuildAgent' with the resolved product entity to isolate and build the shopper cohort.\n"
-    "3. Delegate to 'AudienceScaleAgent' with the audience ID returned by the AudienceBuildAgent to perform lookalike scaling.\n"
-    "4. Delegate to 'AudienceSizeAgent' with the scaled audience ID to compile the reach metrics and obtain the sizing dashboard.\n"
-    "5. Print the exact sizing metrics summary and print the <a2ui-json> XML block verbatim in your final response.\n\n"
-    "If you are explicitly asked to activate the segment with partners, call activate_audience_tool directly.\n"
-    "If you are asked to profile or analyze demographic distributions, call profile_audience_tool."
+    "When a product is selected (e.g., 'Tropicana Pure Premium'), call build_audience_tool with the product name and STOP. Do NOT call size_audience_tool yet.\n"
+    "When the user confirms sizing (e.g., clicking 'Yes, size it' or asking to size), you MUST immediately call size_audience_tool with the audience ID (e.g. AUD-TROPICANA-PURE-PREMIUM-52OZ-999 or derived from the product name). Do NOT ask the user for the ID.\n"
+    "If asked to profile demographic distributions, call profile_audience_tool.\n"
+    "If asked to activate the segment with partners, call activate_audience_tool."
 )
 
 liquid_activate_orchestrator = Agent(
@@ -24,7 +20,7 @@ liquid_activate_orchestrator = Agent(
     model=os.environ.get("GOOGLE_GENAI_MODEL", "gemini-2.5-flash"),
     description="Orchestrator coordinating audience construction, scaling, sizing, profiling, and activation.",
     instruction=ROLE_DESCRIPTION,
-    tools=[FunctionTool(send_message_tool), FunctionTool(activate_audience_tool), FunctionTool(profile_audience_tool)]
+    tools=[FunctionTool(build_audience_tool), FunctionTool(size_audience_tool), FunctionTool(activate_audience_tool), FunctionTool(profile_audience_tool)]
 )
 
 def get_agent_card(host: str, port: int) -> "AgentCard":

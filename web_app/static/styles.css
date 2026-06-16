@@ -689,7 +689,7 @@ body {
     position: relative;
     width: 100%;
     /* Standard dashboard height */
-    height: 720px; 
+    height: 960px; 
     background: var(--bg-color);
 }
 

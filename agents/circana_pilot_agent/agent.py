@@ -26,8 +26,9 @@ Phase A: Pricing Assortment & Product Selection
 
 Phase B: Audience Sizing and Activation Pipeline
 4. When the user selects a product (e.g. from table callback button clicks), delegate the building and sizing sequence to the remote agent "LiquidActivateOrchestrator" by calling your send_message_tool.
-5. The tool returns the sizing metrics and stages the interactive A2UI components automatically. Do NOT output any <a2ui-json> tags or table JSON widgets yourself.
-6. When the user asks for a demographic profile, audience breakdown, or demographic distribution, delegate the profiling task to the remote agent "LiquidActivateOrchestrator" by calling your send_message_tool.
+5. When the user asks to size the audience or clicks "Yes, size it" (e.g. actionId 'size_audience'), delegate the sizing task to the remote agent "LiquidActivateOrchestrator" by calling your send_message_tool.
+6. The tool returns the sizing metrics and stages the interactive A2UI components automatically. Do NOT output any <a2ui-json> tags or table JSON widgets yourself.
+7. When the user asks for a demographic profile, audience breakdown, or demographic distribution, delegate the profiling task to the remote agent "LiquidActivateOrchestrator" by calling your send_message_tool.
 
 Phase C: Target Channel Activation
 6. When the user submits activation partners (e.g., clicking "Activate Audience Segment"), confirm that the export has been initiated successfully.

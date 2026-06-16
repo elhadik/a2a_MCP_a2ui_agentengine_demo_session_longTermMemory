@@ -103,6 +103,15 @@ class BaseSubAgentExecutor(AgentExecutor):
                     if answer_text:
                         print(f"[{self.app_name}] Final answer text: {answer_text}", flush=True)
                         final_parts = parse_response_to_parts(answer_text)
+                        
+                        from circana_pilot_agent.tools import _MOCK_STATE
+                        active_parts = _MOCK_STATE.get("active_data_parts", [])
+                        if active_parts:
+                            from circana_pilot_agent.executor import _create_a2ui_part
+                            for ap in active_parts:
+                                final_parts.append(_create_a2ui_part(ap))
+                            _MOCK_STATE["active_data_parts"] = []
+
                         await updater.update_status(
                             TaskState.completed,
                             new_agent_parts_message(

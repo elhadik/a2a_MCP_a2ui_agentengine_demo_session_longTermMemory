@@ -186,8 +186,9 @@ class CircanaPilotExecutor(AgentExecutor):
                             discount = payload.get("discount_pct", "10")
                             multiplier = payload.get("points_mult", "2")
                             user_input_text = f'Action received: launch personalized loyalty rewards campaign for cohort: "{product}" with discount: {discount}% and points multiplier: {multiplier}x.'
-                        elif action_id == "confirm_size":
-                            user_input_text = "Yes, size it for activation."
+                        elif action_id in ("confirm_size", "size_audience"):
+                            aud_id = payload.get("audience_id", "AUD-TROPICANA-PURE-PREMIUM-52OZ-999")
+                            user_input_text = f"Yes, size the audience {aud_id} for activation."
                             logger.info(f"Translated confirm_size action to query: {user_input_text}")
                         elif action_id == "request_profile":
                             user_input_text = "Compile demographic breakdown and audience profile for this segment."
@@ -267,34 +268,31 @@ class CircanaPilotExecutor(AgentExecutor):
                             [part.text for part in event.content.parts if part.text]
                         )
 
-                    if answer_text:
-                        try:
+                    try:
+                        from .tools import _MOCK_STATE
+                    except ImportError:
+                        from tools import _MOCK_STATE
+                    
+                    active_parts = _MOCK_STATE.get("active_data_parts", [])
+
+                    if answer_text or active_parts:
+                        final_parts = []
+                        if answer_text:
                             try:
-                                from .tools import sanitize_content_with_model_armor
-                            except ImportError:
-                                from tools import sanitize_content_with_model_armor
-                            answer_text = sanitize_content_with_model_armor(answer_text)
-                        except Exception as pii_err:
-                            logger.error(f"Error sanitizing output: {pii_err}")
-                            
-                        final_parts = parse_response_to_parts(answer_text)
+                                try:
+                                    from .tools import sanitize_content_with_model_armor
+                                except ImportError:
+                                    from tools import sanitize_content_with_model_armor
+                                answer_text = sanitize_content_with_model_armor(answer_text)
+                            except Exception as pii_err:
+                                logger.error(f"Error sanitizing output: {pii_err}")
+                            final_parts = parse_response_to_parts(answer_text)
                         
-                        try:
-                            # Safely import the state and append any cached data parts
-                            try:
-                                from .tools import _MOCK_STATE
-                            except ImportError:
-                                from tools import _MOCK_STATE
-                            
-                            active_parts = _MOCK_STATE.get("active_data_parts", [])
-                            if active_parts:
-                                logger.info(f"[CircanaPilotExecutor] Appending {len(active_parts)} cached A2UI data parts directly to final response.")
-                                for data_val in active_parts:
-                                    final_parts.append(_create_a2ui_part(data_val))
-                                # Clear cache
-                                _MOCK_STATE["active_data_parts"] = []
-                        except Exception as cache_err:
-                            logger.error(f"Error appending active data parts: {cache_err}")
+                        if active_parts:
+                            logger.info(f"[CircanaPilotExecutor] Appending {len(active_parts)} cached A2UI data parts directly to final response.")
+                            for data_val in active_parts:
+                                final_parts.append(_create_a2ui_part(data_val))
+                            _MOCK_STATE["active_data_parts"] = []
 
                         await updater.update_status(
                             TaskState.completed,
