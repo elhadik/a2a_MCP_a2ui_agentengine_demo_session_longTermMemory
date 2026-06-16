@@ -204,7 +204,7 @@ function renderA2UIWidget(widget) {
     };
     
     const iframe = document.createElement('iframe');
-    iframe.scrolling = 'auto';
+    iframe.scrolling = 'no';
     
     iframeContainer.appendChild(iframe);
     card.appendChild(header);
@@ -218,12 +218,14 @@ function renderA2UIWidget(widget) {
             const win = iframe.contentWindow;
             const doc = win.document;
             const syncHeight = () => {
+                const wrapper = doc.querySelector('.wrapper') || doc.body;
+                const wrapperH = wrapper ? wrapper.scrollHeight : 0;
                 const bodyH = doc.body ? doc.body.scrollHeight : 0;
                 const docH = doc.documentElement ? doc.documentElement.scrollHeight : 0;
-                const h = Math.max(bodyH, docH, 650);
+                const h = Math.max(bodyH, docH, wrapperH, 1200);
                 if (h > 50) {
-                    iframeContainer.style.height = (h + 60) + 'px';
-                    iframe.style.height = (h + 60) + 'px';
+                    iframeContainer.style.height = (h + 50) + 'px';
+                    iframe.style.height = (h + 50) + 'px';
                 }
             };
             syncHeight();
