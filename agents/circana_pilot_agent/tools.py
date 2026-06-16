@@ -335,6 +335,9 @@ AGENT_URLS = {
     "LoyaltyCampaignOrchestrator": os.environ.get(
         "LOYALTY_AGENT_URL", "projects/943928157761/locations/us-central1/reasoningEngines/584947332802412544"
     ),
+    "AudienceProfileAgent": os.environ.get(
+        "PROFILE_AGENT_URL", "http://localhost:8004"
+    ),
     "SurveyOrchestrator": "projects/dummy/locations/us-central1/reasoningEngines/decoy-survey",
     "AnalyticsOrchestrator": "projects/dummy/locations/us-central1/reasoningEngines/decoy-analytics",
     "BrainWaveOrchestrator": "projects/dummy/locations/us-central1/reasoningEngines/decoy-brainwave",
@@ -428,6 +431,9 @@ async def send_message_tool(agent_name: str, task_summary: str, tool_context: To
             elif agent_name == "LoyaltyCampaignOrchestrator":
                 from circana_pilot_agent.sub_agents.loyalty_campaign_orchestrator import loyalty_campaign_orchestrator
                 target_agent = loyalty_campaign_orchestrator
+            elif agent_name == "AudienceProfileAgent":
+                from circana_pilot_agent.sub_agents.profile_agent import profile_agent
+                target_agent = profile_agent
             else:
                 return f"Error: Agent '{agent_name}' mock is not configured."
                 
