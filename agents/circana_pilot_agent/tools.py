@@ -779,6 +779,12 @@ def profile_audience_tool(audience_id: str) -> str:
         ]
     }
     
+    payloads = [
+        UIBuilder.build_demographic_profile("circana-demographic-profile", profile_data)
+    ]
+    active = _MOCK_STATE.setdefault("active_data_parts", [])
+    active.extend(payloads)
+    
     summary = f"Audience profile compiled successfully for {audience_id} (Median Age: 47, Median Income: $78K)."
     a2ui_block = f"<a2ui-json>\n{json.dumps([{'component_type': 'demographic_profile', 'profile': profile_data}], indent=2)}\n</a2ui-json>"
     return f"{summary}\n\n{a2ui_block}"
