@@ -142,7 +142,6 @@ sequenceDiagram
 * **Shared A2UI Repositories & Demos**:
   * [https://github.com/elhadik/a2ui_ge_jira_screensplit](https://github.com/elhadik/a2ui_ge_jira_screensplit)
   * [https://github.com/elhadik/working_a2ui_poc](https://github.com/elhadik/working_a2ui_poc)
-  * Video Demo: `a2ui_v2_trimmed.mov`
 * **Google Cloud Documentation**: [Register and manage A2A agents](https://cloud.google.com/vertex-ai/generative-ai/docs/agent-registry)
 * **Vega-Lite Specification**: [https://vega.github.io/schema/vega-lite/v5.json](https://vega.github.io/schema/vega-lite/v5.json)
 
