@@ -336,7 +336,7 @@ AGENT_URLS = {
         "LOYALTY_AGENT_URL", "projects/943928157761/locations/us-central1/reasoningEngines/584947332802412544"
     ),
     "AudienceProfileAgent": os.environ.get(
-        "PROFILE_AGENT_URL", "http://localhost:8004"
+        "PROFILE_AGENT_URL", "projects/dummy/locations/us-central1/reasoningEngines/audience-profile"
     ),
     "SurveyOrchestrator": "projects/dummy/locations/us-central1/reasoningEngines/decoy-survey",
     "AnalyticsOrchestrator": "projects/dummy/locations/us-central1/reasoningEngines/decoy-analytics",
