@@ -193,6 +193,11 @@ function renderA2UIWidget(widget) {
     const iframeContainer = document.createElement('div');
     iframeContainer.className = 'iframe-container';
     
+    const isActivation = htmlContent.includes('aud-tile') || htmlContent.includes('Scaled to a Complete');
+    const defaultH = isActivation ? 1250 : 500;
+    iframeContainer.style.minHeight = defaultH + 'px';
+    iframeContainer.style.height = defaultH + 'px';
+    
     header.onclick = () => {
         if (iframeContainer.style.display === 'none') {
             iframeContainer.style.display = 'block';
@@ -205,6 +210,8 @@ function renderA2UIWidget(widget) {
     
     const iframe = document.createElement('iframe');
     iframe.scrolling = 'no';
+    iframe.style.minHeight = defaultH + 'px';
+    iframe.style.height = defaultH + 'px';
     
     iframeContainer.appendChild(iframe);
     card.appendChild(header);
@@ -222,10 +229,10 @@ function renderA2UIWidget(widget) {
                 const wrapperH = wrapper ? wrapper.scrollHeight : 0;
                 const bodyH = doc.body ? doc.body.scrollHeight : 0;
                 const docH = doc.documentElement ? doc.documentElement.scrollHeight : 0;
-                const h = Math.max(bodyH, docH, wrapperH, 1200);
+                const h = Math.max(bodyH, docH, wrapperH, defaultH);
                 if (h > 50) {
-                    iframeContainer.style.height = (h + 50) + 'px';
-                    iframe.style.height = (h + 50) + 'px';
+                    iframeContainer.style.height = h + 'px';
+                    iframe.style.height = h + 'px';
                 }
             };
             syncHeight();
