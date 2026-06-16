@@ -16,7 +16,7 @@ ROLE_DESCRIPTION = (
 
 profile_agent = Agent(
     name="AudienceProfileAgent",
-    model=os.environ.get("GOOGLE_GENAI_MODEL", "gemini-3.5-flash"),
+    model="gemini-2.5-flash",
     description="Specialized Audience Profile Agent for compiling demographic breakdown metrics.",
     instruction=ROLE_DESCRIPTION,
     tools=[FunctionTool(profile_audience_tool)]
