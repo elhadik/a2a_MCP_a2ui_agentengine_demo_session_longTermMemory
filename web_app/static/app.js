@@ -179,21 +179,32 @@ function renderA2UIWidget(widget) {
     iframeContainer.className = 'iframe-container';
     
     const iframe = document.createElement('iframe');
-    iframe.srcdoc = htmlContent;
     iframe.scrolling = 'no';
+    
+    iframeContainer.appendChild(iframe);
+    card.appendChild(header);
+    card.appendChild(iframeContainer);
+    
+    // Append to top of sandbox list before setting srcdoc
+    sandboxContent.insertBefore(card, sandboxContent.firstChild);
     
     iframe.onload = () => {
         try {
             const win = iframe.contentWindow;
             const doc = win.document;
             const syncHeight = () => {
-                const h = doc.documentElement.scrollHeight;
+                const bodyH = doc.body ? doc.body.scrollHeight : 0;
+                const docH = doc.documentElement ? doc.documentElement.scrollHeight : 0;
+                const h = Math.max(bodyH, docH);
                 if (h > 50) {
-                    iframeContainer.style.height = (h + 36) + 'px';
+                    iframeContainer.style.height = (h + 40) + 'px';
+                    iframe.style.height = (h + 40) + 'px';
                 }
             };
             syncHeight();
-            if (win.ResizeObserver) {
+            setTimeout(syncHeight, 100);
+            setTimeout(syncHeight, 500);
+            if (win.ResizeObserver && doc.body) {
                 const ro = new win.ResizeObserver(syncHeight);
                 ro.observe(doc.body);
             }
@@ -202,12 +213,7 @@ function renderA2UIWidget(widget) {
         }
     };
     
-    iframeContainer.appendChild(iframe);
-    card.appendChild(header);
-    card.appendChild(iframeContainer);
-    
-    // Append to top of sandbox list
-    sandboxContent.insertBefore(card, sandboxContent.firstChild);
+    iframe.srcdoc = htmlContent;
 }
 
 // Session Management REST Calls
