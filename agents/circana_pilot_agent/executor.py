@@ -175,7 +175,7 @@ class CircanaPilotExecutor(AgentExecutor):
                         
                         if action_id == "product_selected":
                             product = payload.get("product")
-                            user_input_text = f'Selected product: "{product}". Initiate the audience build and size sequence for this cohort.'
+                            user_input_text = f'Selected product: "{product}"'
                             logger.info(f"Translated product_selected action to query: {user_input_text}")
                         elif action_id == "btn_activate":
                             partners = ", ".join(payload.get("partners", []))
