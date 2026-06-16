@@ -157,17 +157,20 @@ graph TD
     Supervisor -->|2a. Delegate Phase A| Pricing[PricingAssortmentOrchestrator]
     Supervisor -->|2b. Delegate Phase B/C| Activate[LiquidActivateOrchestrator]
     Supervisor -->|2c. Delegate Phase D| Loyalty[LoyaltyCampaignOrchestrator]
+    Supervisor -->|2d. Delegate Profiling| Profile[AudienceProfileAgent]
     
     Pricing -->|Query Attrition| Tool1[pricing_opportunities_tool]
     Activate -->|Compute Sizing| Tool2[audience_sizing_tool]
     Activate -->|Sync Segment| Tool3[activate_segment_tool]
     Loyalty -->|Fetch Offer Config| Tool4[get_loyalty_options_tool]
     Loyalty -->|Launch Rewards| Tool5[launch_campaign_tool]
+    Profile -->|Demographic Breakdown| Tool6[profile_audience_tool]
     
     style Supervisor fill:#f8fafc,stroke:#002f6c,stroke-width:2px;
     style Pricing fill:#e0f2fe,stroke:#0284c7,stroke-width:1px;
     style Activate fill:#ecfdf5,stroke:#059669,stroke-width:1px;
     style Loyalty fill:#fffbeb,stroke:#d97706,stroke-width:1px;
+    style Profile fill:#f3e8ff,stroke:#9333ea,stroke-width:1px;
 ```
 
 #### Active Registry Topology
@@ -178,6 +181,7 @@ graph TD
 | **PricingAssortmentOrchestrator** | specialist agent identifying pricing opportunities and category buyer loss. | `projects/943928157761/`<br>`locations/us-central1/`<br>`reasoningEngines/`<br>`5913690854400196608` | Portfolio search, category shopper attrition mapping. |
 | **LiquidActivateOrchestrator** | specialist agent coordinating cohort audience sizing and activation exports. | `projects/943928157761/`<br>`locations/us-central1/`<br>`reasoningEngines/`<br>`3977143014630883328` | Audience sizing, LiveRamp/Google Customer Match sync. |
 | **LoyaltyCampaignOrchestrator** | specialist agent customizing personalization parameters and reward launches. | `projects/943928157761/`<br>`locations/us-central1/`<br>`reasoningEngines/`<br>`4675200956873310208` | Campaign personalization, loyalty rewards activation. |
+| **AudienceProfileAgent** | specialist agent compiling demographic distribution and audience profile breakdown. | `http://localhost:8004` /<br>`projects/dummy/`<br>`locations/us-central1/`<br>`reasoningEngines/`<br>`audience-profile` | Audience demographic profiling, DMA heatmap analysis. |
 
 > [!IMPORTANT]
 > **Stateful Context Memory**: In the local development runner, session state is managed via `InMemoryMemoryService`. 
