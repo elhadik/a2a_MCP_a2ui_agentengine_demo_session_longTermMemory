@@ -35,7 +35,7 @@ def get_agent_card(host: str, port: int) -> "AgentCard":
     ]
     return AgentCard(
         name='AudienceProfileAgent',
-        description='Specialized Audience Profile Agent wrapping the demographic profiling tool.',
+        description='Specialized Audience Profile Agent for compiling demographic breakdown metrics and audience profile.',
         url=f'http://{host}:{port}/',
         version='1.0.0',
         default_input_modes=['text'],
