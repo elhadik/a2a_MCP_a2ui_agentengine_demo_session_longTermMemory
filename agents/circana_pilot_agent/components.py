@@ -530,54 +530,170 @@ DEMOGRAPHIC_PROFILE_HTML_TEMPLATE = r"""<!DOCTYPE html>
 <head>
     <meta charset='UTF-8'>
     <meta name='viewport' content='width=device-width, initial-scale=1.0'>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <title>Demographic Profile</title>
     <style>
         body {
             font-family: 'Poppins', system-ui, sans-serif;
             margin: 0; padding: 12px;
             color: #0f172a; background: #ffffff;
-            font-size: 12.5px;
+            font-size: 12.5px; line-height: 1.5;
         }
         .panel {
             border: 1px solid #e2e8f0;
-            border-radius: 10px; padding: 16px;
+            border-radius: 12px; padding: 20px;
+            display: flex; flex-direction: column; gap: 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
         }
-        .dp-title { font-weight: 700; font-size: 14px; margin-bottom: 12px; }
+        .dp-title { font-weight: 700; font-size: 15px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: baseline; }
+        .dp-title small { font-weight: 400; font-size: 11.5px; color: #64748b; }
         .stat-strip {
-            display: flex; gap: 12px; margin-bottom: 20px;
+            display: flex; gap: 14px;
         }
         .stat-card {
             flex: 1; background: #f8fafc; border: 1px solid #e2e8f0;
-            border-radius: 8px; padding: 12px;
+            border-radius: 10px; padding: 12px 16px;
         }
         .stat-label { font-size: 10px; text-transform: uppercase; color: #64748b; font-weight: 700; }
-        .stat-num { font-size: 22px; font-weight: 700; margin: 4px 0; color: #0f172a; }
-        .dp-bar-row {
-            display: flex; align-items: center; gap: 12px; margin-bottom: 8px;
+        .stat-num { font-size: 22px; font-weight: 800; margin: 4px 0; color: #0f172a; }
+        .stat-sub { font-size: 10.5px; color: #ff6f00; font-weight: 600; background: #fff7ed; padding: 2px 8px; border-radius: 10px; display: inline-block; border: 1px solid #fed7aa; }
+        
+        .dp-section {
+            border-top: 1px solid #f1f5f9; padding-top: 20px;
         }
-        .dp-lbl { width: 100px; font-weight: 500; font-size: 11.5px; }
-        .dp-track { flex: 1; background: #f1f5f9; height: 16px; border-radius: 8px; overflow: hidden; }
-        .dp-fill { background: #ff6f00; height: 100%; }
-        .dp-pct { width: 40px; text-align: right; font-weight: 600; }
+        
+        .dp-bar-row {
+            display: flex; align-items: center; gap: 16px; margin-bottom: 10px;
+        }
+        .dp-lbl { width: 120px; font-weight: 600; font-size: 12px; color: #334155; }
+        .dp-track { flex: 1; background: #f1f5f9; height: 18px; border-radius: 9px; overflow: hidden; display: flex; }
+        .dp-fill { background: #ff6f00; height: 100%; border-radius: 9px; }
+        .dp-fill.muted { background: #94a3b8; }
+        .dp-pct { width: 45px; text-align: right; font-weight: 700; font-size: 12px; }
+        .dp-idx { width: 55px; text-align: center; font-size: 11px; font-weight: 700; padding: 2px 6px; border-radius: 6px; }
+        .dp-idx.over { background: #fff7ed; color: #c2410c; border: 1px solid #fed7aa; }
+        .dp-idx.under { background: #f8fafc; color: #64748b; border: 1px solid #e2e8f0; }
+
+        .two-col {
+            display: flex; gap: 24px; align-items: flex-start;
+        }
+        .col-left { flex: 3; }
+        .col-right { flex: 2; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px; }
+        
+        .dma-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid #f1f5f9; font-size: 12px; }
+        .dma-row:last-child { border-bottom: none; }
+        .dma-name { font-weight: 600; color: #334155; }
+        
+        .gen-rail { margin-top: 20px; }
+        .gen-bar { display: flex; height: 28px; border-radius: 8px; overflow: hidden; gap: 2px; }
+        .gen-seg { display: flex; flex-direction: column; justify-content: center; align-items: center; color: white; font-weight: 700; font-size: 10px; line-height: 1; }
+        .gen-seg span { font-size: 8.5px; opacity: 0.9; }
+        
+        .followup-section { margin-top: 12px; padding-top: 16px; border-top: 1px solid #e2e8f0; }
+        .followup-label { font-size: 11px; text-transform: uppercase; color: #64748b; font-weight: 700; margin-bottom: 12px; }
+        .chip-row { display: flex; gap: 10px; }
+        .chip {
+            background: #f8fafc; border: 1px solid #cbd5e1; padding: 10px 24px; border-radius: 24px;
+            font-weight: 600; font-size: 13px; cursor: pointer; color: #334155;
+            transition: all 0.2s ease;
+        }
+        .chip:hover { background: #f1f5f9; border-color: #94a3b8; }
+        .chip.go-chip { background: #ff6f00; color: white; border-color: #ff6f00; }
+        .chip.go-chip:hover { background: #e66400; }
     </style>
 </head>
 <body>
     <div class="panel">
         <div class="dp-title">Audience Profile · 3.1M Households</div>
         <div class="stat-strip">
-            <div class="stat-card"><div class="stat-label">Median Age</div><div class="stat-num">47 yrs</div></div>
-            <div class="stat-card"><div class="stat-label">Median Income</div><div class="stat-num">$78K</div></div>
-            <div class="stat-card"><div class="stat-label">Avg HH Size</div><div class="stat-num">3.1</div></div>
-            <div class="stat-card"><div class="stat-label">Kids in HH</div><div class="stat-num">52%</div></div>
+            <div class="stat-card"><div class="stat-label">Median Age</div><div class="stat-num">47 yrs</div><div class="stat-sub">idx 124</div></div>
+            <div class="stat-card"><div class="stat-label">Median Income</div><div class="stat-num">$78K</div><div class="stat-sub">+6 vs US</div></div>
+            <div class="stat-card"><div class="stat-label">Avg HH Size</div><div class="stat-num">3.1</div><div class="stat-sub">+0.6 vs US</div></div>
+            <div class="stat-card"><div class="stat-label">Kids in HH</div><div class="stat-num">52%</div><div class="stat-sub">+38 vs base</div></div>
         </div>
-        <div class="dp-title" style="margin-top:16px;">Household Income Distribution</div>
-        <div class="dp-bar-row"><div class="dp-lbl">&lt; $50K</div><div class="dp-track"><div class="dp-fill" style="width:18%;background:#94a3b8"></div></div><div class="dp-pct">18%</div></div>
-        <div class="dp-bar-row"><div class="dp-lbl">$50 – 75K</div><div class="dp-track"><div class="dp-fill" style="width:38%"></div></div><div class="dp-pct">24%</div></div>
-        <div class="dp-bar-row"><div class="dp-lbl">$75 – 100K</div><div class="dp-track"><div class="dp-fill" style="width:30%"></div></div><div class="dp-pct">22%</div></div>
-        <div class="dp-bar-row"><div class="dp-lbl">$100 – 150K</div><div class="dp-track"><div class="dp-fill" style="width:28%"></div></div><div class="dp-pct">21%</div></div>
-        <div class="dp-bar-row"><div class="dp-lbl">$150K+</div><div class="dp-track"><div class="dp-fill" style="width:15%;background:#94a3b8"></div></div><div class="dp-pct">15%</div></div>
+
+        <div class="dp-section">
+            <div class="dp-title">Age and life stage <small>Audience curve vs US baseline</small></div>
+            <svg viewBox="0 0 620 180" style="width:100%; height:auto;">
+                <line x1="30" y1="150" x2="590" y2="150" stroke="#e2e8f0" stroke-width="1"/>
+                <line x1="30" y1="90" x2="590" y2="90" stroke="#e2e8f0" stroke-width="1" stroke-dasharray="3 3"/>
+                <line x1="30" y1="30" x2="590" y2="30" stroke="#e2e8f0" stroke-width="1" stroke-dasharray="3 3"/>
+                <text x="76" y="168" text-anchor="middle" font-size="11" fill="#64748b">18–24</text>
+                <text x="170" y="168" text-anchor="middle" font-size="11" fill="#64748b">25–34</text>
+                <text x="264" y="168" text-anchor="middle" font-size="11" fill="#64748b" font-weight="700">35–44</text>
+                <text x="358" y="168" text-anchor="middle" font-size="11" fill="#64748b" font-weight="700">45–54</text>
+                <text x="452" y="168" text-anchor="middle" font-size="11" fill="#64748b">55–64</text>
+                <text x="546" y="168" text-anchor="middle" font-size="11" fill="#64748b">65+</text>
+                <path d="M76,120 C170,115 264,110 358,112 452,115 546,118" fill="none" stroke="#94a3b8" stroke-width="2" stroke-dasharray="4 4"/>
+                <path d="M76,140 C170,105 264,30 358,45 452,100 546,125" fill="none" stroke="#ff6f00" stroke-width="3.5"/>
+                <circle cx="264" cy="42" r="5" fill="#ff6f00" stroke="#ffffff" stroke-width="2"/>
+                <circle cx="358" cy="45" r="5" fill="#ff6f00" stroke="#ffffff" stroke-width="2"/>
+                <rect x="270" y="12" width="94" height="22" rx="11" fill="#ff6f00"/>
+                <text x="317" y="27" text-anchor="middle" font-size="10.5" font-weight="700" fill="#ffffff">+30 vs baseline</text>
+            </svg>
+        </div>
+
+        <div class="dp-section">
+            <div class="dp-title">Household income <small>Distribution and index vs US baseline</small></div>
+            <div class="dp-bar-row"><div class="dp-lbl">&lt; $50K</div><div class="dp-track"><div class="dp-fill muted" style="width:18%"></div></div><div class="dp-pct">18%</div><div class="dp-idx under">75</div></div>
+            <div class="dp-bar-row"><div class="dp-lbl">$50 – 75K</div><div class="dp-track"><div class="dp-fill" style="width:38%"></div></div><div class="dp-pct">24%</div><div class="dp-idx over">114</div></div>
+            <div class="dp-bar-row"><div class="dp-lbl">$75 – 100K</div><div class="dp-track"><div class="dp-fill" style="width:30%"></div></div><div class="dp-pct">22%</div><div class="dp-idx over">102</div></div>
+            <div class="dp-bar-row"><div class="dp-lbl">$100 – 150K</div><div class="dp-track"><div class="dp-fill" style="width:28%"></div></div><div class="dp-pct">21%</div><div class="dp-idx over">108</div></div>
+            <div class="dp-bar-row"><div class="dp-lbl">$150K+</div><div class="dp-track"><div class="dp-fill muted" style="width:15%"></div></div><div class="dp-pct">15%</div><div class="dp-idx under">95</div></div>
+        </div>
+
+        <div class="dp-section two-col">
+            <div class="col-left">
+                <div class="dp-title">Geography <small>State density concentration</small></div>
+                <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:24px; text-align:center; font-weight:600; color:#ff6f00; font-size:13px;">
+                    Southern &amp; Midwestern DMA Concentration: TX, GA, FL, IL, AZ Highly Active
+                </div>
+            </div>
+            <div class="col-right">
+                <div style="font-weight:700; font-size:11px; color:#64748b; text-transform:uppercase; margin-bottom:10px;">Top DMAs by Reach</div>
+                <div class="dma-row"><span class="dma-name">Dallas-Ft Worth</span><span>1.4M <b class="dp-idx over">+32</b></span></div>
+                <div class="dma-row"><span class="dma-name">Houston</span><span>1.2M <b class="dp-idx over">+28</b></span></div>
+                <div class="dma-row"><span class="dma-name">Atlanta</span><span>1.1M <b class="dp-idx over">+24</b></span></div>
+                <div class="dma-row"><span class="dma-name">Chicago</span><span>1.1M <b class="dp-idx over">+9</b></span></div>
+            </div>
+        </div>
+
+        <div class="dp-section">
+            <div class="dp-title">Household composition &amp; Generation mix</div>
+            <div class="dp-bar-row"><div class="dp-lbl">Couple + 2 kids</div><div class="dp-track"><div class="dp-fill" style="width:60%"></div></div><div class="dp-pct">30%</div><div class="dp-idx over">+62</div></div>
+            <div class="dp-bar-row"><div class="dp-lbl">Couple + 1 kid</div><div class="dp-track"><div class="dp-fill" style="width:44%"></div></div><div class="dp-pct">22%</div><div class="dp-idx over">+34</div></div>
+            <div class="dp-bar-row"><div class="dp-lbl">Couple, no kids</div><div class="dp-track"><div class="dp-fill muted" style="width:48%"></div></div><div class="dp-pct">24%</div><div class="dp-idx under">idx 92</div></div>
+            <div class="dp-bar-row"><div class="dp-lbl">Single parent</div><div class="dp-track"><div class="dp-fill" style="width:18%"></div></div><div class="dp-pct">9%</div><div class="dp-idx over">+18</div></div>
+            <div class="dp-bar-row"><div class="dp-lbl">Single adult</div><div class="dp-track"><div class="dp-fill muted" style="width:16%"></div></div><div class="dp-pct">8%</div><div class="dp-idx under">idx 71</div></div>
+
+            <div class="gen-rail">
+                <div style="font-size:10.5px; font-weight:700; color:#64748b; text-transform:uppercase; margin-bottom:6px;">Generation Mix</div>
+                <div class="gen-bar">
+                    <div class="gen-seg" style="flex:14; background:#94a3b8;">14%<span>Gen Z</span></div>
+                    <div class="gen-seg" style="flex:24; background:#6366f1;">24%<span>Millennial</span></div>
+                    <div class="gen-seg" style="flex:38; background:#ff6f00;">38%<span>Gen X (Lead)</span></div>
+                    <div class="gen-seg" style="flex:18; background:#10b981;">18%<span>Boomer</span></div>
+                    <div class="gen-seg" style="flex:6; background:#cbd5e1; color:#334155;">6%<span>Silent</span></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="followup-section">
+            <div class="followup-label">Recommended next steps</div>
+            <div class="chip-row">
+                <button class="chip go-chip" onclick="activatePartner('LiveRamp,Google')">🚀 Activate</button>
+            </div>
+        </div>
     </div>
+    <script>
+        function activatePartner(partners) {
+            window.parent.postMessage({
+                type: 'USER_ACTION',
+                actionId: 'btn_activate',
+                payload: { partners: partners.split(',') }
+            }, '*');
+        }
+    </script>
 </body>
 </html>
 """

@@ -66,7 +66,8 @@ const indicators = {
     supervisor: document.getElementById('indicator-supervisor'),
     pricing: document.getElementById('indicator-pricing'),
     activate: document.getElementById('indicator-activate'),
-    loyalty: document.getElementById('indicator-loyalty')
+    loyalty: document.getElementById('indicator-loyalty'),
+    profile: document.getElementById('indicator-profile')
 };
 
 function setIndicator(activeName) {
@@ -501,6 +502,9 @@ async function submitInteractiveAction(action) {
     } else if (action.actionId === 'btn_launch_campaign') {
         userPromptText = `Launching personalized campaign for ${action.payload.product} (${action.payload.discount_pct}% discount, ${action.payload.points_mult}x multiplier)`;
         setIndicator('loyalty');
+    } else if (action.actionId === 'profile_audience') {
+        userPromptText = `Compiling demographic breakdown and audience profile...`;
+        setIndicator('profile');
     } else {
         userPromptText = `Initiating A2UI callback action: ${action.actionId}`;
     }
