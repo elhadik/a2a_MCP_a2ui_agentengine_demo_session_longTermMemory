@@ -196,16 +196,25 @@ class CircanaPilotExecutor(AgentExecutor):
                         elif action_id == "do_activate":
                             user_input_text = "Activate the audience"
                             logger.info(f"Translated do_activate action to query: {user_input_text}")
+                        else:
+                            user_input_text = f"Execute action: {action_id}"
+                            logger.info(f"Fallback translated action {action_id} to query: {user_input_text}")
                     except Exception as action_err:
                         logger.error(f"Error parsing interactive action payload: {action_err}")
 
                 try:
-                    runner_parts.append(to_stored_part(part))
+                    stored = to_stored_part(part)
+                    if getattr(stored, 'inline_data', None) and stored.inline_data.mime_type == "application/x-a2a-datapart":
+                        continue
+                    runner_parts.append(stored)
                 except Exception as e:
                     logger.warning(f"Failed to convert part: {e}")
 
         if not user_input_text:
             user_input_text = context.get_user_input()
+
+        if not runner_parts:
+            runner_parts = [types.Part(text=user_input_text or "Execute action")]
 
         # If we translated an action, clear and set the primary text part
         if user_input_text:
