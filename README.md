@@ -201,21 +201,48 @@ This walkthrough illustrates an interactive session across the supervisor and th
 
 ---
 
-### Step B: Audience Definition & Cohort Sizing (`Activate Agent`)
-*   **Agent Functionality**: Constructs behavioral lookalikes (ProScore expansion) and sizes addressable households across destination ad platforms (LiveRamp, Google Customer Match).
+### Step B: ProScore Lookalike Cohort Expansion (`Activate Agent`)
+*   **Agent Functionality**: Constructs behavioral lookalikes (ProScore expansion) from verified panel seed buyers.
 *   **User Request**: Selecting the `"Tropicana Pure Premium 52oz"` product row.
-*   **Agent Response & Action**: The `LiquidActivateOrchestrator` expands the deterministic seed (412.4K) to 3.1M lookalikes and sizes addressable match reach at **2.86 Million Households**.
+*   **Agent Response & Action**: The `LiquidActivateOrchestrator` expands the deterministic seed (412,400 households) via ProScore lookalikes to a complete activation-ready audience of 3.1M households.
 
-![Interactive Cohort Sizing Dashboard](architecture/screenshots/demo_audience_sizing.png)
+![ProScore Lookalike Expansion Dashboard](architecture/screenshots/demo_proscore_expansion.png)
 
 ---
 
-### Step C: Demographic Profiling & Geography (`Profile Agent`)
-*   **Agent Functionality**: Compiles demographic breakdowns, DMA concentration heatmaps, household composition, and generational distributions.
+### Step C: Addressable Reach & Partner Sizing (`Activate Agent`)
+*   **Agent Functionality**: Sizes estimated reach and addressable match rates across destination platforms (LiveRamp, Google DV360).
+*   **User Request**: Confirming `"Yes, size it"`.
+*   **Agent Response & Action**: Calculates an addressable match rate of **92%** (**2.86 Million Households**) and stages downstream activation options.
+
+![Addressable Reach Sizing Dashboard](architecture/screenshots/demo_sizing_reach.png)
+
+---
+
+### Step D: Income Tier & DMA Geography Profiling (`Profile Agent`)
+*   **Agent Functionality**: Compiles demographic distributions, income distribution indexes against US baseline, and top DMAs by reach.
 *   **User Request**: Clicking `"View Demographic Profile"` / `"Profile it"`.
 *   **Agent Response & Action**: The `AudienceProfileAgent` renders a comprehensive demographic dashboard highlighting Middle-Income concentration ($50-75K Index 114) and Southern DMA clusters (Dallas-Ft Worth +32 Index).
 
-![Profile Agent Screen](architecture/screenshots/demo_demographic_profile.png)
+![Demographic Income & Geography Dashboard](architecture/screenshots/demo_profile_income.png)
+
+---
+
+### Step E: Household Composition & Generational Mix (`Profile Agent`)
+*   **Agent Functionality**: Breaks down family household structures (kids in HH) and generation cohort distribution.
+*   **User Request**: Scrolling profile metrics canvas.
+*   **Agent Response & Action**: Highlights family concentration (`Couple + 2 kids` indexing +62) and primary decision-maker demographics (`Gen X` 38%).
+
+![Demographic Composition Dashboard](architecture/screenshots/demo_profile_composition.png)
+
+---
+
+### Step F: Cross-Channel Export & Sync Confirmation (`Activate Agent`)
+*   **Agent Functionality**: Packages matching deterministic panel segments and securely transmits identifiers to selected downstream activation endpoints.
+*   **User Request**: Clicking `"Activate"` / `"Exporting cohort segment"`.
+*   **Agent Response & Action**: Initiates real-time secure CRM onboarding to LiveRamp and Google DV360 Custom Match lists.
+
+![Cross-Channel Sync Confirmation](architecture/screenshots/demo_export_sync.png)
 
 ---
 
