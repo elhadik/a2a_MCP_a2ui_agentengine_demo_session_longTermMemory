@@ -204,7 +204,7 @@ function renderA2UIWidget(widget) {
     };
     
     const iframe = document.createElement('iframe');
-    iframe.scrolling = 'no';
+    iframe.scrolling = 'auto';
     
     iframeContainer.appendChild(iframe);
     card.appendChild(header);
@@ -220,10 +220,10 @@ function renderA2UIWidget(widget) {
             const syncHeight = () => {
                 const bodyH = doc.body ? doc.body.scrollHeight : 0;
                 const docH = doc.documentElement ? doc.documentElement.scrollHeight : 0;
-                const h = Math.max(bodyH, docH);
+                const h = Math.max(bodyH, docH, 650);
                 if (h > 50) {
-                    iframeContainer.style.height = (h + 40) + 'px';
-                    iframe.style.height = (h + 40) + 'px';
+                    iframeContainer.style.height = (h + 60) + 'px';
+                    iframe.style.height = (h + 60) + 'px';
                 }
             };
             syncHeight();
