@@ -194,8 +194,7 @@ function renderA2UIWidget(widget) {
     iframeContainer.className = 'iframe-container';
     
     const isActivation = surfaceId.includes('activation') || htmlContent.includes('aud-tile') || htmlContent.includes('Scaled to a Complete');
-    const defaultH = isActivation ? 1250 : 500;
-    iframeContainer.style.minHeight = defaultH + 'px';
+    const defaultH = isActivation ? 700 : 450;
     iframeContainer.style.height = defaultH + 'px';
     
     header.onclick = () => {
@@ -209,9 +208,9 @@ function renderA2UIWidget(widget) {
     };
     
     const iframe = document.createElement('iframe');
-    iframe.scrolling = 'no';
-    iframe.style.minHeight = defaultH + 'px';
-    iframe.style.height = defaultH + 'px';
+    iframe.scrolling = 'yes';
+    iframe.style.width = '100%';
+    iframe.style.height = '100%';
     
     iframeContainer.appendChild(iframe);
     card.appendChild(header);
@@ -229,10 +228,9 @@ function renderA2UIWidget(widget) {
                 const wrapperH = wrapper ? wrapper.scrollHeight : 0;
                 const bodyH = doc.body ? doc.body.scrollHeight : 0;
                 const docH = doc.documentElement ? doc.documentElement.scrollHeight : 0;
-                const h = Math.max(bodyH, docH, wrapperH, defaultH);
-                if (h > 50) {
-                    iframeContainer.style.height = h + 'px';
-                    iframe.style.height = h + 'px';
+                const h = Math.max(bodyH, docH, wrapperH);
+                if (h > 50 && h < 800) {
+                    iframeContainer.style.height = (h + 40) + 'px';
                 }
             };
             syncHeight();
