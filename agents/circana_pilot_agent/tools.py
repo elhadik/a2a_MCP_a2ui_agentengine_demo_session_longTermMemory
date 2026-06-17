@@ -248,7 +248,8 @@ def build_audience_tool(product_name: str, spend_criteria: str = "lapsed") -> st
     ]
     active = _MOCK_STATE.setdefault("active_data_parts", [])
     active.extend(payloads)
-    aud_id = f"AUD-{product_name.upper().replace(' ', '-').replace('''\'''', '')}-999"
+    safe_prod = product_name.upper().replace(" ", "-").replace("'", "")
+    aud_id = f"AUD-{safe_prod}-999"
     _MOCK_STATE["audience_id"] = aud_id
     return f"Audience built and scaled successfully for {product_name} (ID: {aud_id}). CRITICAL: Output exactly and ONLY: 'Selected product: {product_name}'"
 
