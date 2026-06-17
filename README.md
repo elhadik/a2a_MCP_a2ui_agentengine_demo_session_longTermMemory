@@ -460,4 +460,212 @@ When pair-programming, AI agents like Antigravity parse the `SKILL.md` documents
 *   **IDE Extension**:
     Search for **Antigravity** in the Google Internal Extensions Marketplace or VS Code Extensions panel to enable inline code completion and sidebar agent chat workspace bindings.
 
+---
+
+## Operational Supplement: Unified Multi-Agent Engine & MCP Deployment Guide
+
+This guide bridges the gap between the foundational README and the explicit requirements of enterprise cloud policies, focusing on Application Default Credentials (ADC), caching constraints, and precise directory resolution.
+
+### Step 1: Repository Cloning & Core Pre-requisites
+Execute these operations from your Linux Virtual Machine terminal to pull down the project and create a localized target environment shell.
+
+```bash
+# 1. Clone the master repository branch
+git clone https://github.com/elhadik/a2a_MCP_a2ui_agentengine_demo_session_longTermMemory.git
+cd a2a_MCP_a2ui_agentengine_demo_session_longTermMemory
+
+# 2. Establish a clean, isolated Python virtual environment workspace
+python3 -m venv venv
+source venv/bin/activate
+
+# 3. Write your ground-truth ecosystem environment properties matrix
+cat << 'EOF' > .env
+GCP_PROJECT_ID="symmetric-sonar-444512-p5"
+GCP_REGION="us-central1"
+VERTEX_AI_PROJECT="symmetric-sonar-444512-p5"
+VERTEX_AI_LOCATION="us-central1"
+STORAGE_BUCKET="gs://symmetric-sonar-444512-p5-agent-stage"
+GOOGLE_GENAI_USE_VERTEXAI="true"
+GOOGLE_CLOUD_PROJECT="symmetric-sonar-444512-p5"
+GOOGLE_CLOUD_LOCATION="us-central1"
+EOF
+```
+
+### Step 2: Enable Core Cloud APIs & Identity Provisioning
+You must systematically initialize the underlying microservice fabrics on Google Cloud before applying role configurations.
+
+```bash
+# Enable required service micro-engines
+gcloud services enable \
+    aiplatform.googleapis.com \
+    discoveryengine.googleapis.com \
+    iam.googleapis.com \
+    run.googleapis.com \
+    artifactregistry.googleapis.com \
+    cloudbuild.googleapis.com
+```
+
+### Step 3: Comprehensive Cloud IAM Role Assignments
+Enterprise policies intentionally disallow static API keys (`GEMINI_API_KEY`). The application must run entirely keyless via cross-service Identity and Access Management (IAM). Run this block to authorize your user profile, the backend compute engine, and the Vertex AI service agents:
+
+```bash
+# Set foundational variables
+export PROJECT_ID="symmetric-sonar-444512-p5"
+export ACTIVE_USER="admin@flupo.altostrat.com"
+export PROJECT_NUMBER=$(gcloud projects describe $PROJECT_ID --format="value(projectNumber)")
+
+# 1. Authorize your deployer profile to orchestrate architectures
+gcloud projects add-iam-policy-binding $PROJECT_ID --member="user:$ACTIVE_USER" --role="roles/run.admin"
+gcloud projects add-iam-policy-binding $PROJECT_ID --member="user:$ACTIVE_USER" --role="roles/storage.admin"
+gcloud projects add-iam-policy-binding $PROJECT_ID --member="user:$ACTIVE_USER" --role="roles/iam.serviceAccountUser"
+
+# 2. Authorize the Front-end Web Portal's identity to call Gemini keylessly (ADC)
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+    --member="serviceAccount:$PROJECT_NUMBER-compute@developer.gserviceaccount.com" \
+    --role="roles/aiplatform.user"
+```
+
+### Step 4: Building & Deploying the MCP Backend Server
+Why this step differs from the original README: Because the code file is located deep within a nested folder structure (`agents/circana_pilot_agent/mcp_servers/circana_mcp_server.py`), standard Cloud Buildpack guessers fail. We bypass this by creating an explicit `Dockerfile` that maps python package visibility tracking parameters (`PYTHONPATH`).
+
+#### A. Create the Workspace Blueprint
+Run this command block to drop the precise execution file into your root workspace:
+
+```bash
+cat << 'EOF' > Dockerfile
+FROM python:3.11-slim
+WORKDIR /app
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONPATH=/app:/app/agents
+COPY . /app/
+RUN pip install --no-cache-dir fastapi uvicorn google-cloud-storage python-dotenv
+EXPOSE 8080
+CMD ["python", "agents/circana_pilot_agent/mcp_servers/circana_mcp_server.py", "--http", "--host", "0.0.0.0", "--port", "8080"]
+EOF
+```
+
+#### B. Configure the Cached Deployer Script
+Overwrite your `deploy_mcp.py` tracking script with this version. It passes empty strings (`--command ""` and `--args ""`) to clear sticky, broken command metadata caches out of Cloud Run's revision history:
+
+```python
+cat << 'EOF' > deploy_mcp.py
+import os
+import re
+import subprocess
+import sys
+
+def deploy_mcp():
+    project_id = "symmetric-sonar-444512-p5"
+    region = "us-central1"
+    service_name = "circana-mcp-server"
+    
+    print("Starting deployment of MCP Server to Google Cloud Run via Dockerfile...")
+    
+    cmd = [
+        "gcloud", "run", "deploy", service_name,
+        "--source", ".",
+        "--region", region,
+        "--project", project_id,
+        "--no-allow-unauthenticated",
+        "--command", "",
+        "--args", ""
+    ]
+    
+    try:
+        process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+        service_url = None
+        for line in process.stdout:
+            sys.stdout.write(line)
+            sys.stdout.flush()
+            if "Service URL:" in line:
+                match = re.search(r"Service URL:\s*(https://[^\s]+)", line)
+                if match:
+                    service_url = match.group(1)
+                    
+        process.wait()
+        if process.returncode != 0:
+            sys.exit(process.returncode)
+            
+        print(f"\n✓ MCP Server deployed successfully! URL: {service_url}")
+        
+        env_path = ".env"
+        env_content = ""
+        if os.path.exists(env_path):
+            with open(env_path, "r") as f:
+                env_content = f.read()
+                
+        if "MCP_SERVER_URL=" in env_content:
+            env_content = re.sub(r"MCP_SERVER_URL=[^\n]*", f"MCP_SERVER_URL={service_url}", env_content)
+        else:
+            env_content = env_content.strip() + f"\nMCP_SERVER_URL={service_url}\n"
+            
+        with open(env_path, "w") as f:
+            f.write(env_content)
+            
+        print("✓ Updated .env file with remote MCP_SERVER_URL.")
+        
+    except Exception as e:
+        sys.exit(1)
+
+if __name__ == "__main__":
+    deploy_mcp()
+EOF
+```
+
+#### C. Run Build & Authorize Inter-Service Invocation
+Execute the script, then grant the global Vertex AI system profile explicit permissions to bypass network perimeters and invoke your secure backend tools:
+
+```bash
+# 1. Compile and deploy via Cloud Build
+python deploy_mcp.py
+
+# 2. Authorize Vertex AI to call the newly created service
+gcloud run services add-iam-policy-binding circana-mcp-server \
+    --region=us-central1 \
+    --project=$PROJECT_ID \
+    --member="serviceAccount:service-$PROJECT_NUMBER@gcp-sa-aiplatform.iam.gserviceaccount.com" \
+    --role="roles/run.invoker"
+```
+
+### Step 5: Registering the Vertex AI Sub-Agents
+With the active tool URL written back into your local configuration context, you can register the reasoning brain components.
+
+*Note: Temporary access tokens automatically drop after exactly 60 minutes. Re-prime your terminal session context parameters to prevent an unexpected access token refresh crash trace.*
+
+```bash
+# 1. Establish a fresh 60-minute access token block
+export GOOGLE_OAUTH_ACCESS_TOKEN=$(gcloud auth print-access-token)
+
+# 2. Trigger the master agents provisioning process
+python deploy.py
+```
+
+### Step 6: Deploying the Asynchronous Web Portal
+The final dashboard element is built using the provided layout file `Dockerfile.portal`.
+
+*Note on package weight minimization: Make sure your root directory has a `.gcloudignore` file tracking your virtual directories (e.g., matching lines for `venv/` or `.git/`). This keeps Cloud Build from needlessly uploading heavy local compiler dependencies, keeping the deployment file small.*
+
+```bash
+# 1. Stage the designated portal configuration file
+cp Dockerfile.portal Dockerfile
+
+# 2. Launch the Web UI to Cloud Run bound to keyless enterprise parameters
+gcloud run deploy circana-portal \
+  --source . \
+  --region us-central1 \
+  --project symmetric-sonar-444512-p5 \
+  --allow-unauthenticated \
+  --command "" \
+  --args "" \
+  --set-env-vars GOOGLE_GENAI_USE_VERTEXAI="true",GOOGLE_CLOUD_PROJECT="symmetric-sonar-444512-p5",GOOGLE_CLOUD_LOCATION="us-central1"
+
+# 3. Clean up the temporary root spec file
+rm Dockerfile
+```
+
+### Step 7: Post-Install Verification & Testing
+Once complete, open the public secure route path link returned by the `circana-portal` execution step in your web browser. Type a test prompt (e.g., `"Create a target marketing cohort for Pepsi products"`).
+
+The web interface will securely fetch your keyless identity tokens, route intent parameters down to the active Vertex AI agents, and trigger the cloud container to parse your databases smoothly.
+
 
