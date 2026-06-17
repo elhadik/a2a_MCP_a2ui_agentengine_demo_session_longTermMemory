@@ -11,7 +11,7 @@ The **Retail Multi-Agent Orchestration Hub** is a premium, state-of-the-art pilo
 
 Explore the E2E user flow of the Multi-Agent Portal, showing session initialization, tool execution, dynamic widget rendering, and safety blocks:
 
-![Web App Demo Walkthrough](architecture/videos/portal_demo.webp)
+![Web App Demo Walkthrough](architecture/videos/portal_demo_v2.webp)
 
 ---
 
