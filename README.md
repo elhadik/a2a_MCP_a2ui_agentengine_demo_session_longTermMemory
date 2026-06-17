@@ -192,6 +192,11 @@ graph TD
 
 This walkthrough illustrates an interactive session across the supervisor and three specialized sub-agents, demonstrating how conversational requests translate into native A2UI data models.
 
+### 🎥 End-to-End Platform Tour Video
+![Circana E2E Platform Walkthrough Video](architecture/videos/circana_app_walkthrough.webp)
+
+---
+
 ### Step A: Category Pricing & Attrition Analysis (`Pricing Agent`)
 *   **Agent Functionality**: Identifies category pricing opportunities, calculates lost households, and ranks product attrition where price increases drove volume loss.
 *   **User Request**: `"Identify pricing opportunities with shopper attrition in the Soft Drinks category."`
