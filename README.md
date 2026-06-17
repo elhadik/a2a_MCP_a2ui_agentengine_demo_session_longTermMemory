@@ -198,7 +198,7 @@ This walkthrough illustrates an interactive session across the supervisor and th
 *   **User Request**: `"Identify pricing opportunities with shopper attrition in the Soft Drinks category."`
 *   **Agent Response & Action**: The `PricingAssortmentOrchestrator` queries historical store attrition data and projects an interactive product selection table into the browser canvas:
 
-![Initial Product Select Table](architecture/screenshots/demo_pricing_table.png)
+![Initial Product Select Table](architecture/screenshots/demo_pricing_table_v2.png)
 
 ---
 
